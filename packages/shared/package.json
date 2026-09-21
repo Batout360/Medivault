@@ -1,0 +1,50 @@
+{
+  "name": "@medivault/shared",
+  "version": "1.0.0",
+  "description": "Shared types, enums, and DTOs for Medivault MRMS",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./types": {
+      "import": "./dist/types/index.js",
+      "require": "./dist/types/index.js",
+      "types": "./dist/types/index.d.ts"
+    },
+    "./enums": {
+      "import": "./dist/enums/index.js",
+      "require": "./dist/enums/index.js",
+      "types": "./dist/enums/index.d.ts"
+    },
+    "./dto": {
+      "import": "./dist/dto/index.js",
+      "require": "./dist/dto/index.js",
+      "types": "./dist/dto/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "build:watch": "tsc --project tsconfig.json --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.3"
+  },
+  "peerDependencies": {
+    "class-validator": "^0.14.1",
+    "class-transformer": "^0.5.1"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "publishConfig": {
+    "access": "restricted"
+  }
+}

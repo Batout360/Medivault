@@ -1,0 +1,53 @@
+{
+  "name": "@medivault/biometric-bridge",
+  "version": "1.0.0",
+  "description": "Local biometric scanner bridge service — connects USB fingerprint scanners (Mantra MFS100) to the Medivault frontend via a documented HTTP + WebSocket protocol",
+  "private": true,
+  "main": "dist/apps/biometric-bridge/src/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/apps/biometric-bridge/src/server.js",
+    "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --cov"
+  },
+  "dependencies": {
+    "@medivault/mfs100-sdk": "*",
+    "koffi": "^3.3.1",
+    "ws": "^8.16.0",
+    "pino": "^8.18.0",
+    "pino-pretty": "^10.3.1",
+    "dotenv": "^16.4.5"
+  },
+  "optionalDependencies": {
+    "usb": "^2.11.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/ws": "^8.5.10",
+    "@types/node": "^20.11.0",
+    "jest": "^30.5.1",
+    "ts-jest": "^29.4.12",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "rootDir": "src",
+    "testRegex": ".*\\.(spec|test)\\.ts$",
+    "transform": {
+      "^.+\\.ts$": [
+        "ts-jest",
+        {
+          "tsconfig": "./tsconfig.json"
+        }
+      ]
+    },
+    "moduleNameMapper": {
+      "^@medivault/mfs100-sdk(.*)$": "<rootDir>/../../../packages/mfs100-sdk/src$1",
+      "^@medivault/mfs100-sdk$": "<rootDir>/../../../packages/mfs100-sdk/src/index.ts"
+    }
+  }
+}

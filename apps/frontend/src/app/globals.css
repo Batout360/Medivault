@@ -1,0 +1,386 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CSS CUSTOM PROPERTIES — Light Mode (default)
+   Based on the medical-blue palette for clinical professionalism
+   ───────────────────────────────────────────────────────────────────────── */
+@layer base {
+  :root {
+    /* ── Core Colors ──────────────────────────────────────────────────────── */
+    --background: 210 40% 98%;          /* slate-50 — clean clinical white */
+    --foreground: 222 47% 11%;          /* slate-900 — readable dark text */
+
+    --card: 0 0% 100%;                  /* pure white cards */
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* ── Primary: Medical Blue ────────────────────────────────────────────── */
+    --primary: 221 83% 53%;             /* medical-blue-600 — #2563eb */
+    --primary-foreground: 210 40% 98%; /* white text on blue */
+
+    /* ── Secondary: Slate ────────────────────────────────────────────────── */
+    --secondary: 214 32% 91%;           /* slate-200 */
+    --secondary-foreground: 222 47% 11%;
+
+    /* ── Muted: Subtle backgrounds ────────────────────────────────────────── */
+    --muted: 214 32% 96%;               /* slate-100 */
+    --muted-foreground: 215 16% 47%;    /* slate-500 */
+
+    /* ── Accent ──────────────────────────────────────────────────────────── */
+    --accent: 214 32% 91%;
+    --accent-foreground: 222 47% 11%;
+
+    /* ── Destructive: Alert Red ──────────────────────────────────────────── */
+    --destructive: 346 77% 50%;         /* alert-red-600 — #e11d48 */
+    --destructive-foreground: 210 40% 98%;
+
+    /* ── Border & Input ──────────────────────────────────────────────────── */
+    --border: 214 32% 91%;              /* slate-200 */
+    --input: 214 32% 91%;
+    --ring: 221 83% 53%;                /* medical-blue-600 for focus rings */
+
+    /* ── Status Colors ────────────────────────────────────────────────────── */
+    --status-critical: 346 77% 50%;     /* alert-red */
+    --status-urgent: 32 95% 44%;        /* warning-amber */
+    --status-stable: 142 71% 45%;       /* clinical-green */
+    --status-discharged: 215 16% 47%;   /* slate-500 */
+    --status-deceased: 222 47% 11%;     /* slate-900 */
+
+    /* ── Border Radius ────────────────────────────────────────────────────── */
+    --radius: 0.5rem;
+
+    /* ── Medical Blue Full Palette ─────────────────────────────────────────
+       Exposed as CSS variables for use in non-Tailwind contexts            */
+    --medical-blue-50: #eff6ff;
+    --medical-blue-100: #dbeafe;
+    --medical-blue-200: #bfdbfe;
+    --medical-blue-300: #93c5fd;
+    --medical-blue-400: #60a5fa;
+    --medical-blue-500: #3b82f6;
+    --medical-blue-600: #2563eb;
+    --medical-blue-700: #1d4ed8;
+    --medical-blue-800: #1e40af;
+    --medical-blue-900: #1e3a8a;
+    --medical-blue-950: #172554;
+
+    /* ── Clinical Green Full Palette ──────────────────────────────────────── */
+    --clinical-green-50: #f0fdf4;
+    --clinical-green-100: #dcfce7;
+    --clinical-green-500: #22c55e;
+    --clinical-green-600: #16a34a;
+    --clinical-green-700: #15803d;
+
+    /* ── Alert Red Full Palette ───────────────────────────────────────────── */
+    --alert-red-50: #fff1f2;
+    --alert-red-100: #ffe4e6;
+    --alert-red-500: #f43f5e;
+    --alert-red-600: #e11d48;
+    --alert-red-700: #be123c;
+
+    /* ── Warning Amber Full Palette ───────────────────────────────────────── */
+    --warning-amber-50: #fffbeb;
+    --warning-amber-100: #fef3c7;
+    --warning-amber-500: #f59e0b;
+    --warning-amber-600: #d97706;
+    --warning-amber-700: #b45309;
+
+    /* ── Sidebar (navigation panel) ──────────────────────────────────────── */
+    --sidebar-background: 221 39% 11%;  /* deep navy for medical authority */
+    --sidebar-foreground: 213 31% 91%;
+    --sidebar-primary: 221 83% 63%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 47% 18%;
+    --sidebar-accent-foreground: 213 31% 91%;
+    --sidebar-border: 222 47% 18%;
+    --sidebar-ring: 221 83% 63%;
+
+    /* ── Typography ──────────────────────────────────────────────────────── */
+    --font-size-base: 16px;
+    --line-height-base: 1.5;
+    --letter-spacing-tight: -0.02em;
+    --letter-spacing-normal: 0em;
+    --letter-spacing-wide: 0.02em;
+  }
+
+  /* ── Dark Mode Overrides ───────────────────────────────────────────────── */
+  .dark {
+    --background: 222 47% 5%;           /* very dark navy */
+    --foreground: 210 40% 95%;          /* near-white text */
+
+    --card: 222 47% 8%;                 /* dark card surfaces */
+    --card-foreground: 210 40% 95%;
+
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 40% 95%;
+
+    --primary: 217 91% 60%;             /* medical-blue-500 — brighter in dark mode */
+    --primary-foreground: 222 47% 5%;
+
+    --secondary: 222 47% 15%;
+    --secondary-foreground: 210 40% 95%;
+
+    --muted: 222 47% 12%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 222 47% 15%;
+    --accent-foreground: 210 40% 95%;
+
+    --destructive: 346 87% 65%;         /* brighter red for dark mode visibility */
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 222 47% 18%;
+    --input: 222 47% 15%;
+    --ring: 217 91% 60%;
+
+    --status-critical: 346 87% 65%;
+    --status-urgent: 40 96% 60%;
+    --status-stable: 142 76% 55%;
+    --status-discharged: 215 20% 55%;
+    --status-deceased: 215 20% 75%;
+
+    --sidebar-background: 222 47% 4%;
+    --sidebar-foreground: 213 31% 91%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 47% 10%;
+    --sidebar-accent-foreground: 213 31% 91%;
+    --sidebar-border: 222 47% 10%;
+    --sidebar-ring: 217 91% 60%;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BASE ELEMENT STYLES
+   ───────────────────────────────────────────────────────────────────────── */
+@layer base {
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  html {
+    font-size: var(--font-size-base);
+    scroll-behavior: smooth;
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+    font-feature-settings: 'rlig' 1, 'calt' 1, 'tnum' 1; /* tabular numerals for medical data */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Headings */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+    text-wrap: balance;
+  }
+
+  h1 { @apply text-3xl; }
+  h2 { @apply text-2xl; }
+  h3 { @apply text-xl; }
+  h4 { @apply text-lg; }
+
+  /* Paragraphs */
+  p {
+    text-wrap: pretty;
+    @apply leading-relaxed;
+  }
+
+  /* Focus styles — accessible and on-brand */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Remove default focus ring for mouse users */
+  :focus:not(:focus-visible) {
+    @apply outline-none;
+  }
+
+  /* Monospace — used for MRN, IDs, codes */
+  code, kbd, pre, samp {
+    font-family: var(--font-jetbrains-mono), ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+    font-feature-settings: 'liga' 0; /* disable ligatures for clinical codes */
+  }
+
+  /* Links */
+  a {
+    @apply text-primary underline-offset-4;
+  }
+  a:hover {
+    @apply underline;
+  }
+
+  /* Selection color */
+  ::selection {
+    background-color: hsl(var(--primary) / 0.2);
+    color: hsl(var(--foreground));
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   COMPONENT UTILITIES
+   ───────────────────────────────────────────────────────────────────────── */
+@layer components {
+  /* Medical Record Number — always monospace, uppercase */
+  .mrn {
+    @apply font-mono text-sm font-semibold tracking-widest uppercase;
+  }
+
+  /* Critical value indicator */
+  .critical-value {
+    @apply text-alert-red-600 font-bold dark:text-alert-red-400;
+  }
+
+  /* High value indicator */
+  .value-high {
+    @apply text-warning-amber-600 font-semibold dark:text-warning-amber-400;
+  }
+
+  /* Low value indicator */
+  .value-low {
+    @apply text-medical-blue-600 font-semibold dark:text-medical-blue-400;
+  }
+
+  /* Normal value */
+  .value-normal {
+    @apply text-clinical-green-700 dark:text-clinical-green-500;
+  }
+
+  /* Allergy badge — always visually prominent */
+  .allergy-badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold
+           bg-alert-red-100 text-alert-red-800
+           dark:bg-alert-red-950 dark:text-alert-red-300
+           border border-alert-red-200 dark:border-alert-red-800;
+  }
+
+  /* Skeleton loading shimmer */
+  .skeleton {
+    @apply animate-pulse rounded bg-muted;
+  }
+
+  /* Card base */
+  .card-base {
+    @apply rounded-lg border bg-card text-card-foreground shadow-card
+           transition-shadow duration-200 hover:shadow-card-hover;
+  }
+
+  /* Sidebar navigation item */
+  .nav-item {
+    @apply flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium
+           transition-colors duration-150
+           text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground;
+  }
+
+  .nav-item-active {
+    @apply bg-sidebar-accent text-sidebar-primary;
+  }
+
+  /* Data table */
+  .data-table {
+    @apply w-full border-collapse text-sm;
+  }
+
+  .data-table th {
+    @apply px-4 py-3 text-left font-semibold text-muted-foreground
+           border-b border-border bg-muted/50;
+  }
+
+  .data-table td {
+    @apply px-4 py-3 border-b border-border;
+  }
+
+  .data-table tr:last-child td {
+    @apply border-0;
+  }
+
+  .data-table tr:hover td {
+    @apply bg-muted/30;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PRINT STYLES — for medical records printing
+   ───────────────────────────────────────────────────────────────────────── */
+@media print {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+    --primary: 221 83% 30%;
+  }
+
+  body {
+    font-size: 11pt;
+    line-height: 1.4;
+    color: #000;
+    background: #fff;
+  }
+
+  /* Hide non-printable elements */
+  nav,
+  .no-print,
+  [data-no-print],
+  button:not([data-print-visible]) {
+    display: none !important;
+  }
+
+  /* Ensure links are visible in print */
+  a[href]::after {
+    content: none; /* Suppress URL printing for privacy */
+  }
+
+  /* Page breaks */
+  .page-break-before { page-break-before: always; }
+  .page-break-after { page-break-after: always; }
+  .avoid-break { page-break-inside: avoid; }
+
+  /* Medical record header */
+  .print-header {
+    display: block !important;
+    border-bottom: 2px solid #000;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  /* Tables in print */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  th, td {
+    border: 1px solid #ccc;
+    padding: 4px 8px;
+    font-size: 10pt;
+  }
+
+  th {
+    background-color: #f0f0f0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

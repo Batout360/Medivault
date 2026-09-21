@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "outDir": "./dist",
+    "declaration": false,
+    "declarationMap": false,
+    "baseUrl": "./",
+    "incremental": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false,
+    "paths": {
+      "@medivault/shared": ["../../packages/shared/src/index.ts"],
+      "@medivault/shared/*": ["../../packages/shared/src/*"],
+      "@medivault/mfs100-sdk": ["../../packages/mfs100-sdk/src/index.ts"],
+      "@medivault/mfs100-sdk/*": ["../../packages/mfs100-sdk/src/*"]
+    }
+  },
+  "include": ["src/**/*", "test/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

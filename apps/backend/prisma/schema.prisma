@@ -1,0 +1,1128 @@
+// =============================================================================
+// Medivault – Medical Records Management System
+// Prisma Schema – MySQL
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum UserRole {
+  SUPER_ADMIN
+  ORG_ADMIN
+  FACILITY_ADMIN
+  DOCTOR
+  NURSE
+  PHARMACIST
+  LAB_TECHNICIAN
+  RADIOLOGIST
+  RECEPTIONIST
+  BILLING_STAFF
+  PATIENT
+  AUDITOR
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  UNKNOWN
+}
+
+enum BloodGroup {
+  A_POSITIVE
+  A_NEGATIVE
+  B_POSITIVE
+  B_NEGATIVE
+  AB_POSITIVE
+  AB_NEGATIVE
+  O_POSITIVE
+  O_NEGATIVE
+  UNKNOWN
+}
+
+enum AllergyType {
+  DRUG
+  FOOD
+  ENVIRONMENTAL
+  INSECT
+  LATEX
+  OTHER
+}
+
+enum AllergySeverity {
+  MILD
+  MODERATE
+  SEVERE
+  LIFE_THREATENING
+}
+
+enum DiagnosisType {
+  PRIMARY
+  SECONDARY
+  DIFFERENTIAL
+  PROVISIONAL
+  FINAL
+  COMORBIDITY
+}
+
+enum DiagnosisStatus {
+  ACTIVE
+  RESOLVED
+  CHRONIC
+  INACTIVE
+  RECURRENCE
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  CHECKED_IN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+  RESCHEDULED
+}
+
+enum DocumentType {
+  LAB_REPORT
+  IMAGING_REPORT
+  PRESCRIPTION
+  DISCHARGE_SUMMARY
+  REFERRAL_LETTER
+  CONSENT_FORM
+  INSURANCE_DOCUMENT
+  VACCINATION_RECORD
+  MEDICAL_HISTORY
+  CLINICAL_NOTE
+  OPERATIVE_REPORT
+  PATHOLOGY_REPORT
+  OTHER
+}
+
+enum EncounterType {
+  OUTPATIENT
+  INPATIENT
+  EMERGENCY
+  TELEHEALTH
+  HOME_VISIT
+  DAY_SURGERY
+  ICU
+  OTHER
+}
+
+enum PrescriptionRoute {
+  ORAL
+  INTRAVENOUS
+  INTRAMUSCULAR
+  SUBCUTANEOUS
+  TOPICAL
+  INHALATION
+  SUBLINGUAL
+  RECTAL
+  OPHTHALMIC
+  OTIC
+  NASAL
+  TRANSDERMAL
+  OTHER
+}
+
+enum BiometricType {
+  FINGERPRINT
+  IRIS
+  FACE
+  PALM_VEIN
+  VOICE
+  RETINA
+}
+
+enum AuditEventType {
+  // Authentication
+  AUTH_LOGIN_SUCCESS
+  AUTH_LOGIN_FAILURE
+  AUTH_LOGOUT
+  AUTH_TOKEN_REFRESH
+  AUTH_MFA_VERIFY
+  AUTH_PASSWORD_RESET_REQUEST
+  AUTH_PASSWORD_RESET_COMPLETE
+  AUTH_PASSWORD_CHANGE
+  AUTH_ACCOUNT_LOCKED
+  AUTH_ACCOUNT_UNLOCKED
+  // Patient
+  PATIENT_CREATE
+  PATIENT_READ
+  PATIENT_UPDATE
+  PATIENT_DELETE
+  PATIENT_SEARCH
+  // Medical Record
+  MEDICAL_RECORD_CREATE
+  MEDICAL_RECORD_READ
+  MEDICAL_RECORD_UPDATE
+  MEDICAL_RECORD_DELETE
+  // Prescription
+  PRESCRIPTION_CREATE
+  PRESCRIPTION_READ
+  PRESCRIPTION_UPDATE
+  PRESCRIPTION_DISPENSE
+  // Document
+  DOCUMENT_UPLOAD
+  DOCUMENT_DOWNLOAD
+  DOCUMENT_DELETE
+  DOCUMENT_SHARE
+  // Biometric
+  BIOMETRIC_ENROLL
+  BIOMETRIC_VERIFY
+  BIOMETRIC_REVOKE
+  // Admin
+  USER_CREATE
+  USER_UPDATE
+  USER_DELETE
+  ROLE_ASSIGN
+  PERMISSION_CHANGE
+  // Consent
+  CONSENT_GRANT
+  CONSENT_REVOKE
+  // System
+  SYSTEM_CONFIG_CHANGE
+  DATA_EXPORT
+  DATA_IMPORT
+}
+
+enum SecurityEventType {
+  BRUTE_FORCE_ATTEMPT
+  SUSPICIOUS_LOGIN
+  MULTIPLE_FAILED_MFA
+  UNAUTHORIZED_ACCESS_ATTEMPT
+  PRIVILEGE_ESCALATION_ATTEMPT
+  UNUSUAL_DATA_ACCESS
+  CONCURRENT_SESSION_DETECTED
+  GEO_ANOMALY
+  BIOMETRIC_SPOOF_ATTEMPT
+  RATE_LIMIT_EXCEEDED
+  INVALID_TOKEN_USAGE
+  SQL_INJECTION_ATTEMPT
+  XSS_ATTEMPT
+  CSRF_ATTEMPT
+  API_ABUSE
+}
+
+enum IdentifierType {
+  NATIONAL_ID
+  PASSPORT
+  DRIVERS_LICENSE
+  HEALTH_CARD
+  INSURANCE_ID
+  HOSPITAL_MRN
+  BIRTH_CERTIFICATE
+  SSN
+  OTHER
+}
+
+enum StorageProvider {
+  LOCAL
+  AWS_S3
+  AZURE_BLOB
+  GCP_STORAGE
+}
+
+// =============================================================================
+// ORGANIZATION & FACILITY
+// =============================================================================
+
+model Organization {
+  id            String   @id @default(uuid())
+  name          String
+  type          String   // hospital, clinic, lab, pharmacy, etc.
+  address       Json
+  phone         String
+  email         String
+  licenseNumber String   @unique
+  isActive      Boolean  @default(true)
+  settings      Json     @default("{}")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  facilities     Facility[]
+  users          User[]
+  patients       Patient[]
+  auditLogs      AuditLog[]
+  biometricDevices BiometricDevice[]
+
+  @@index([email])
+  @@index([isActive])
+  @@map("organizations")
+}
+
+model Facility {
+  id             String   @id @default(uuid())
+  organizationId String
+  name           String
+  type           String   // ward, clinic, lab, pharmacy, radiology, etc.
+  address        Json
+  phone          String
+  email          String
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  organization     Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  users            User[]
+  patients         Patient[]
+  appointments     Appointment[]
+  medicalRecords   MedicalRecord[]
+  auditLogs        AuditLog[]
+  biometricDevices BiometricDevice[]
+
+  @@index([organizationId])
+  @@index([isActive])
+  @@map("facilities")
+}
+
+// =============================================================================
+// USERS & AUTH
+// =============================================================================
+
+model User {
+  id                  String    @id @default(uuid())
+  email               String    @unique
+  username            String    @unique
+  passwordHash        String
+  firstName           String
+  lastName            String
+  phone               String?
+  role                UserRole
+  organizationId      String?
+  facilityId          String?
+  isActive            Boolean   @default(true)
+  isEmailVerified     Boolean   @default(false)
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  passwordChangedAt   DateTime?
+  mfaEnabled          Boolean   @default(false)
+  mfaSecret           String?   // encrypted TOTP secret
+  mfaBackupCodes      String    @default("[]") @db.Text // JSON-serialized encrypted backup codes
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime? // soft delete
+
+  // Relations
+  organization        Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  facility            Facility?      @relation(fields: [facilityId], references: [id], onDelete: SetNull)
+  sessions            Session[]
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  emailVerifyTokens   EmailVerificationToken[]
+
+  // Clinical relations (as provider)
+  appointments        Appointment[]      @relation("DoctorAppointments")
+  medicalRecords      MedicalRecord[]    @relation("DoctorRecords")
+  clinicalNotes       ClinicalNote[]     @relation("AuthoredNotes")
+  amendedNotes        ClinicalNote[]     @relation("AmendedNotes")
+  prescriptions       Prescription[]
+  vitalsRecorded      Vital[]
+  labReportsOrdered   LabReport[]        @relation("OrderedLabReports")
+  imagingOrdered      ImagingReport[]    @relation("OrderedImaging")
+  imagingRadiology    ImagingReport[]    @relation("RadiologistImaging")
+  proceduresPerformed Procedure[]
+  vaccinesAdministered Vaccination[]
+
+  // Patient admin relations
+  patientsRegistered  Patient[]          @relation("RegisteredBy")
+  biometricsEnrolled  BiometricTemplate[] @relation("EnrolledBy")
+  biometricsRevoked   BiometricTemplate[] @relation("RevokedBy")
+  documentsUploaded   Document[]
+  documentVersions    DocumentVersion[]
+  biometricDevicesReg BiometricDevice[]
+
+  // Security
+  securityEventsResolved SecurityEvent[] @relation("ResolvedBy")
+
+  // Audit (denormalized — userId stored as string in AuditLog)
+  cancelledAppointments Appointment[]    @relation("CancelledByUser")
+
+  @@index([email])
+  @@index([organizationId])
+  @@index([facilityId])
+  @@index([role])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model Session {
+  id         String    @id @default(uuid())
+  userId     String
+  deviceId   String?
+  ipAddress  String
+  userAgent  String?
+  isActive   Boolean   @default(true)
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  // Relations
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+
+  @@index([userId])
+  @@index([isActive])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  token     String    @unique  // hashed token stored; raw only returned once
+  tokenHash String    @unique
+  userId    String
+  sessionId String
+  expiresAt DateTime
+  usedAt    DateTime?
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("email_verification_tokens")
+}
+
+// =============================================================================
+// PATIENTS
+// =============================================================================
+
+model Patient {
+  id             String    @id @default(uuid())
+  mrn            String    @unique  // Medical Record Number
+  firstName      String
+  lastName       String
+  middleName     String?
+  dateOfBirth    DateTime
+  gender         Gender
+  bloodGroup     BloodGroup @default(UNKNOWN)
+  phone          String?
+  email          String?
+  address        Json?
+  organizationId String
+  facilityId     String?
+  isActive       Boolean   @default(true)
+  registeredById String
+  registeredAt   DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime? // soft delete
+
+  // Relations
+  organization     Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  facility         Facility?       @relation(fields: [facilityId], references: [id], onDelete: SetNull)
+  registeredBy     User            @relation("RegisteredBy", fields: [registeredById], references: [id], onDelete: Restrict)
+  identifiers      PatientIdentifier[]
+  biometricTemplates BiometricTemplate[]
+  emergencyContacts  EmergencyContact[]
+  allergies          PatientAllergy[]
+  conditions         MedicalCondition[]
+  insurances         Insurance[]
+  appointments       Appointment[]
+  medicalRecords     MedicalRecord[]
+  diagnoses          Diagnosis[]
+  clinicalNotes      ClinicalNote[]
+  prescriptions      Prescription[]
+  medications        Medication[]
+  vitals             Vital[]
+  labReports         LabReport[]
+  imagingReports     ImagingReport[]
+  procedures         Procedure[]
+  vaccinations       Vaccination[]
+  documents          Document[]
+  consentRecords     ConsentRecord[]
+
+  @@index([organizationId])
+  @@index([facilityId])
+  @@index([mrn])
+  @@index([dateOfBirth])
+  @@index([deletedAt])
+  @@index([isActive])
+  @@map("patients")
+}
+
+model PatientIdentifier {
+  id              String         @id @default(uuid())
+  patientId       String
+  identifierType  IdentifierType
+  identifierValue String
+  isPrimary       Boolean        @default(false)
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([patientId, identifierType, identifierValue])
+  @@index([patientId])
+  @@index([identifierType, identifierValue])
+  @@map("patient_identifiers")
+}
+
+model BiometricTemplate {
+  id                    String        @id @default(uuid())
+  patientId             String
+  templateType          BiometricType
+  encryptedTemplate     Bytes         @db.MediumBlob // AES-256 encrypted biometric template
+  encryptedTemplateIv   Bytes         @db.TinyBlob  // Initialization vector for decryption (16 bytes)
+  templateHash          String        // SHA-256 hash for integrity verification
+  quality               Float         // Template quality score 0.0-100.0
+  deviceId              String?
+  enrolledById          String
+  enrolledAt            DateTime      @default(now())
+  isActive              Boolean       @default(true)
+  revokedAt             DateTime?
+  revokedById           String?
+
+  // Relations
+  patient    Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  enrolledBy User     @relation("EnrolledBy", fields: [enrolledById], references: [id], onDelete: Restrict)
+  revokedBy  User?    @relation("RevokedBy", fields: [revokedById], references: [id], onDelete: SetNull)
+  device     BiometricDevice? @relation(fields: [deviceId], references: [deviceId], onDelete: SetNull)
+
+  @@index([patientId])
+  @@index([templateType])
+  @@index([isActive])
+  @@map("biometric_templates")
+}
+
+model EmergencyContact {
+  id           String   @id @default(uuid())
+  patientId    String
+  name         String
+  relationship String
+  phone        String
+  email        String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@map("emergency_contacts")
+}
+
+model PatientAllergy {
+  id          String          @id @default(uuid())
+  patientId   String
+  allergen    String
+  allergyType AllergyType
+  severity    AllergySeverity
+  reaction    String?
+  verifiedBy  String?         // userId of verifying clinician
+  verifiedAt  DateTime?
+  notes       String?
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([allergyType])
+  @@map("patient_allergies")
+}
+
+model MedicalCondition {
+  id            String   @id @default(uuid())
+  patientId     String
+  conditionCode String?  // ICD-10 code
+  conditionName String
+  status        DiagnosisStatus @default(ACTIVE)
+  diagnosedAt   DateTime?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([conditionCode])
+  @@map("medical_conditions")
+}
+
+model Insurance {
+  id           String    @id @default(uuid())
+  patientId    String
+  provider     String
+  policyNumber String
+  groupNumber  String?
+  coverageType String
+  validFrom    DateTime
+  validTo      DateTime?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([policyNumber])
+  @@map("insurances")
+}
+
+// =============================================================================
+// APPOINTMENTS
+// =============================================================================
+
+model Appointment {
+  id              String            @id @default(uuid())
+  patientId       String
+  doctorId        String
+  facilityId      String
+  scheduledAt     DateTime
+  duration        Int               // minutes
+  appointmentType String
+  status          AppointmentStatus @default(SCHEDULED)
+  reason          String?
+  notes           String?
+  cancelledBy     String?           // userId
+  cancelledAt     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Relations
+  patient         Patient  @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  doctor          User     @relation("DoctorAppointments", fields: [doctorId], references: [id], onDelete: Restrict)
+  facility        Facility @relation(fields: [facilityId], references: [id], onDelete: Restrict)
+  cancelledByUser User?    @relation("CancelledByUser", fields: [cancelledBy], references: [id], onDelete: SetNull)
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([facilityId])
+  @@index([scheduledAt])
+  @@index([status])
+  @@map("appointments")
+}
+
+// =============================================================================
+// MEDICAL RECORDS
+// =============================================================================
+
+model MedicalRecord {
+  id                        String        @id @default(uuid())
+  patientId                 String
+  encounterId               String?       @unique // external encounter reference
+  doctorId                  String
+  facilityId                String
+  encounterType             EncounterType
+  encounterDate             DateTime
+  chiefComplaint            String?       @db.Text
+  historyOfPresentIllness   String?       @db.Text
+  physicalExam              String?       @db.Text
+  assessment                String?       @db.Text
+  plan                      String?       @db.Text
+  notes                     String?       @db.Text
+  followUpDate              DateTime?
+  isConfidential            Boolean       @default(false)
+  createdAt                 DateTime      @default(now())
+  updatedAt                 DateTime      @updatedAt
+  deletedAt                 DateTime?     // soft delete
+
+  // Relations
+  patient        Patient   @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  doctor         User      @relation("DoctorRecords", fields: [doctorId], references: [id], onDelete: Restrict)
+  facility       Facility  @relation(fields: [facilityId], references: [id], onDelete: Restrict)
+  diagnoses      Diagnosis[]
+  clinicalNotes  ClinicalNote[]
+  prescriptions  Prescription[]
+  labReports     LabReport[]
+  imagingReports ImagingReport[]
+  procedures     Procedure[]
+  documents      Document[]
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([facilityId])
+  @@index([encounterDate])
+  @@index([deletedAt])
+  @@map("medical_records")
+}
+
+model Diagnosis {
+  id              String          @id @default(uuid())
+  medicalRecordId String
+  patientId       String
+  diagnosisCode   String?         // ICD-10 / SNOMED code
+  diagnosisName   String
+  diagnosisType   DiagnosisType   @default(PRIMARY)
+  severity        String?
+  status          DiagnosisStatus @default(ACTIVE)
+  diagnosedAt     DateTime        @default(now())
+  notes           String?
+  createdAt       DateTime        @default(now())
+
+  // Relations
+  medicalRecord MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Cascade)
+  patient       Patient       @relation(fields: [patientId], references: [id], onDelete: Restrict)
+
+  @@index([medicalRecordId])
+  @@index([patientId])
+  @@index([diagnosisCode])
+  @@map("diagnoses")
+}
+
+model ClinicalNote {
+  id              String    @id @default(uuid())
+  medicalRecordId String
+  patientId       String
+  authorId        String
+  noteType        String    // SOAP, progress, discharge, referral, etc.
+  content         String    @db.Text
+  isAmended       Boolean   @default(false)
+  amendedById     String?
+  amendedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  medicalRecord MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Cascade)
+  patient       Patient       @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  author        User          @relation("AuthoredNotes", fields: [authorId], references: [id], onDelete: Restrict)
+  amendedBy     User?         @relation("AmendedNotes", fields: [amendedById], references: [id], onDelete: SetNull)
+
+  @@index([medicalRecordId])
+  @@index([patientId])
+  @@index([authorId])
+  @@map("clinical_notes")
+}
+
+// =============================================================================
+// PRESCRIPTIONS & MEDICATIONS
+// =============================================================================
+
+model Prescription {
+  id              String            @id @default(uuid())
+  patientId       String
+  prescribedById  String
+  medicalRecordId String?
+  medicationName  String
+  genericName     String?
+  dosage          String
+  frequency       String
+  route           PrescriptionRoute @default(ORAL)
+  duration        String?
+  quantity        String?
+  refills         Int               @default(0)
+  instructions    String?
+  isActive        Boolean           @default(true)
+  prescribedAt    DateTime          @default(now())
+  expiresAt       DateTime?
+  dispensedAt     DateTime?
+  createdAt       DateTime          @default(now())
+
+  // Relations
+  patient       Patient        @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  prescribedBy  User           @relation(fields: [prescribedById], references: [id], onDelete: Restrict)
+  medicalRecord MedicalRecord? @relation(fields: [medicalRecordId], references: [id], onDelete: SetNull)
+  medications   Medication[]
+
+  @@index([patientId])
+  @@index([prescribedById])
+  @@index([medicalRecordId])
+  @@index([isActive])
+  @@map("prescriptions")
+}
+
+model Medication {
+  id             String    @id @default(uuid())
+  patientId      String
+  prescriptionId String?
+  name           String
+  dosage         String
+  frequency      String
+  startDate      DateTime
+  endDate        DateTime?
+  prescribedBy   String?   // free-text or userId
+  isActive       Boolean   @default(true)
+  notes          String?
+  createdAt      DateTime  @default(now())
+
+  // Relations
+  patient      Patient       @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  prescription Prescription? @relation(fields: [prescriptionId], references: [id], onDelete: SetNull)
+
+  @@index([patientId])
+  @@index([prescriptionId])
+  @@index([isActive])
+  @@map("medications")
+}
+
+// =============================================================================
+// VITALS
+// =============================================================================
+
+model Vital {
+  id                     String    @id @default(uuid())
+  patientId              String
+  recordedById           String
+  bloodPressureSystolic  Float?
+  bloodPressureDiastolic Float?
+  heartRate              Float?
+  temperature            Float?    // Celsius
+  respiratoryRate        Float?
+  oxygenSaturation       Float?    // SpO2 percentage
+  weight                 Float?    // kg
+  height                 Float?    // cm
+  bmi                    Float?
+  glucose                Float?    // mg/dL
+  notes                  String?
+  recordedAt             DateTime
+  createdAt              DateTime  @default(now())
+
+  // Relations
+  patient    Patient @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  recordedBy User    @relation(fields: [recordedById], references: [id], onDelete: Restrict)
+
+  @@index([patientId])
+  @@index([recordedById])
+  @@index([recordedAt])
+  @@map("vitals")
+}
+
+// =============================================================================
+// LAB & IMAGING REPORTS
+// =============================================================================
+
+model LabReport {
+  id              String    @id @default(uuid())
+  patientId       String
+  orderedById     String
+  medicalRecordId String?
+  testName        String
+  testCode        String?   // LOINC code
+  status          String    // ordered, in_progress, completed, cancelled
+  results         Json?
+  normalRange     String?
+  unit            String?
+  interpretation  String?   // normal, abnormal, critical
+  labName         String?
+  reportDate      DateTime?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  patient       Patient        @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  orderedBy     User           @relation("OrderedLabReports", fields: [orderedById], references: [id], onDelete: Restrict)
+  medicalRecord MedicalRecord? @relation(fields: [medicalRecordId], references: [id], onDelete: SetNull)
+
+  @@index([patientId])
+  @@index([orderedById])
+  @@index([medicalRecordId])
+  @@index([reportDate])
+  @@map("lab_reports")
+}
+
+model ImagingReport {
+  id              String    @id @default(uuid())
+  patientId       String
+  orderedById     String
+  medicalRecordId String?
+  imagingType     String    // X-Ray, CT, MRI, Ultrasound, PET, etc.
+  bodyPart        String?
+  indication      String?
+  findings        String?
+  impression      String?
+  radiologistId   String?
+  reportDate      DateTime?
+  documentId      String?   // linked document (DICOM, PDF)
+  createdAt       DateTime  @default(now())
+
+  // Relations
+  patient       Patient        @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  orderedBy     User           @relation("OrderedImaging", fields: [orderedById], references: [id], onDelete: Restrict)
+  medicalRecord MedicalRecord? @relation(fields: [medicalRecordId], references: [id], onDelete: SetNull)
+  radiologist   User?          @relation("RadiologistImaging", fields: [radiologistId], references: [id], onDelete: SetNull)
+
+  @@index([patientId])
+  @@index([orderedById])
+  @@index([medicalRecordId])
+  @@index([reportDate])
+  @@map("imaging_reports")
+}
+
+// =============================================================================
+// PROCEDURES & VACCINATIONS
+// =============================================================================
+
+model Procedure {
+  id              String    @id @default(uuid())
+  patientId       String
+  performedById   String
+  medicalRecordId String?
+  procedureCode   String?   // CPT code
+  procedureName   String
+  performedAt     DateTime
+  duration        Int?      // minutes
+  notes           String?
+  outcome         String?
+  createdAt       DateTime  @default(now())
+
+  // Relations
+  patient       Patient        @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  performedBy   User           @relation(fields: [performedById], references: [id], onDelete: Restrict)
+  medicalRecord MedicalRecord? @relation(fields: [medicalRecordId], references: [id], onDelete: SetNull)
+
+  @@index([patientId])
+  @@index([performedById])
+  @@index([medicalRecordId])
+  @@map("procedures")
+}
+
+model Vaccination {
+  id               String    @id @default(uuid())
+  patientId        String
+  administeredById String
+  vaccineName      String
+  vaccineCode      String?   // CVX code
+  dose             String?
+  lotNumber        String?
+  manufacturer     String?
+  administeredAt   DateTime
+  nextDueDate      DateTime?
+  site             String?   // injection site
+  route            String?   // IM, SC, intranasal, etc.
+  notes            String?
+  createdAt        DateTime  @default(now())
+
+  // Relations
+  patient        Patient @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  administeredBy User    @relation(fields: [administeredById], references: [id], onDelete: Restrict)
+
+  @@index([patientId])
+  @@index([administeredById])
+  @@index([administeredAt])
+  @@map("vaccinations")
+}
+
+// =============================================================================
+// DOCUMENTS
+// =============================================================================
+
+model Document {
+  id              String        @id @default(uuid())
+  patientId       String
+  uploadedById    String
+  documentType    DocumentType
+  fileName        String        // stored name (UUID-based)
+  originalName    String        // original filename from upload
+  mimeType        String
+  fileSize        BigInt        @db.UnsignedBigInt
+  storageKey      String        // path/key in storage backend
+  storageProvider StorageProvider @default(LOCAL)
+  checksum        String        // SHA-256 of file content
+  isEncrypted     Boolean       @default(true)
+  medicalRecordId String?
+  description     String?
+  tags            String        @default("[]") @db.Text // JSON-serialized tags array
+  version         Int           @default(1)
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?     // soft delete
+
+  // Relations
+  patient       Patient          @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  uploadedBy    User             @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  medicalRecord MedicalRecord?   @relation(fields: [medicalRecordId], references: [id], onDelete: SetNull)
+  versions      DocumentVersion[]
+
+  @@index([patientId])
+  @@index([uploadedById])
+  @@index([medicalRecordId])
+  @@index([documentType])
+  @@index([deletedAt])
+  @@map("documents")
+}
+
+model DocumentVersion {
+  id         String   @id @default(uuid())
+  documentId String
+  version    Int
+  storageKey String
+  fileSize   BigInt   @db.UnsignedBigInt
+  checksum   String
+  createdById String
+  createdAt  DateTime @default(now())
+
+  // Relations
+  document  Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  createdBy User     @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@unique([documentId, version])
+  @@index([documentId])
+  @@map("document_versions")
+}
+
+// =============================================================================
+// CONSENT
+// =============================================================================
+
+model ConsentRecord {
+  id          String    @id @default(uuid())
+  patientId   String
+  consentType String    // treatment, data_sharing, research, etc.
+  grantedTo   String?   // userId or organization name
+  purpose     String
+  grantedAt   DateTime  @default(now())
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  notes       String?
+  createdAt   DateTime  @default(now())
+
+  // Relations
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([consentType])
+  @@map("consent_records")
+}
+
+// =============================================================================
+// AUDIT & SECURITY
+// =============================================================================
+
+/// Immutable audit trail — never updated after insert.
+/// Do NOT add @updatedAt — intentional omission for immutability.
+model AuditLog {
+  id           String         @id @default(uuid())
+  eventType    AuditEventType
+  userId       String?        // nullable: system-generated events
+  userRole     UserRole?
+  organizationId String?
+  facilityId   String?
+  ipAddress    String?
+  userAgent    String?
+  sessionId    String?
+  requestId    String?
+  resourceType String?
+  resourceId   String?
+  action       String?
+  result       String?        // success, failure, partial
+  metadata     Json?
+  errorCode    String?
+  createdAt    DateTime       @default(now())
+
+  // Denormalized relations (no FK constraints — audit logs must survive
+  // deletion of referenced records for compliance)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  facility     Facility?     @relation(fields: [facilityId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([eventType])
+  @@index([organizationId])
+  @@index([facilityId])
+  @@index([createdAt])
+  @@index([resourceType, resourceId])
+  @@index([sessionId])
+  @@map("audit_logs")
+}
+
+model SecurityEvent {
+  id           String             @id @default(uuid())
+  eventType    SecurityEventType
+  severity     String             // LOW, MEDIUM, HIGH, CRITICAL
+  userId       String?
+  ipAddress    String?
+  userAgent    String?
+  details      Json               @default("{}")
+  resolved     Boolean            @default(false)
+  resolvedAt   DateTime?
+  resolvedById String?
+  createdAt    DateTime           @default(now())
+
+  // Relations
+  resolvedBy User? @relation("ResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([eventType])
+  @@index([severity])
+  @@index([resolved])
+  @@index([createdAt])
+  @@map("security_events")
+}
+
+// =============================================================================
+// BIOMETRIC DEVICES
+// =============================================================================
+
+model BiometricDevice {
+  id             String    @id @default(uuid())
+  deviceId       String    @unique  // hardware device identifier
+  organizationId String
+  facilityId     String?
+  deviceType     BiometricType
+  manufacturer   String?
+  model          String?
+  serialNumber   String?
+  isActive       Boolean   @default(true)
+  lastSeenAt     DateTime?
+  registeredById String
+  createdAt      DateTime  @default(now())
+
+  // Relations
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  facility          Facility?    @relation(fields: [facilityId], references: [id], onDelete: SetNull)
+  registeredBy      User         @relation(fields: [registeredById], references: [id], onDelete: Restrict)
+  biometricTemplates BiometricTemplate[]
+
+  @@index([organizationId])
+  @@index([facilityId])
+  @@index([isActive])
+  @@map("biometric_devices")
+}

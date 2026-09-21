@@ -1,0 +1,90 @@
+{
+  "name": "medivault",
+  "version": "1.0.0",
+  "description": "Medical Records Management System - Monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently --kill-others-on-fail \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:bridge\"",
+    "dev:backend": "npm run dev --workspace=apps/backend",
+    "dev:frontend": "npm run dev --workspace=apps/frontend",
+    "dev:bridge": "npm run dev --workspace=apps/biometric-bridge",
+    "build": "npm run build --workspace=packages/shared && npm run build --workspace=@medivault/mfs100-sdk && concurrently \"npm run build --workspace=apps/backend\" \"npm run build --workspace=apps/frontend\" \"npm run build --workspace=apps/biometric-bridge\"",
+    "build:backend": "npm run build --workspace=apps/backend",
+    "build:frontend": "npm run build --workspace=apps/frontend",
+    "build:shared": "npm run build --workspace=packages/shared",
+    "build:sdk": "npm run build --workspace=@medivault/mfs100-sdk",
+    "build:bridge": "npm run build --workspace=apps/biometric-bridge",
+    "test": "npm run test --workspaces --if-present",
+    "test:backend": "npm run test --workspace=apps/backend",
+    "test:frontend": "npm run test --workspace=apps/frontend",
+    "test:e2e": "npm run test:e2e --workspace=apps/backend",
+    "lint": "npm run lint --workspaces --if-present",
+    "lint:backend": "npm run lint --workspace=apps/backend",
+    "lint:frontend": "npm run lint --workspace=apps/frontend",
+    "lint:fix": "npm run lint:fix --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "clean": "rimraf \"apps/*/dist\" \"apps/*/.next\" \"packages/*/dist\" \"node_modules/.cache\"",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "concurrently": "^8.2.2",
+    "husky": "^9.0.11",
+    "jest": "^30.5.1",
+    "lint-staged": "^15.2.2",
+    "rimraf": "^5.0.5",
+    "ts-jest": "^29.4.12",
+    "typescript": "^5.3.3"
+  },
+  "overrides": {
+    "qs": "6.16.0",
+    "body-parser": "1.20.8",
+    "file-type": "22.1.1",
+    "tmp": "0.2.7",
+    "js-yaml": "4.3.2",
+    "multer": "2.4.0",
+    "lodash": "^4.18.1",
+    "rxjs": "7.8.2",
+    "next": {
+      "postcss": "^8.5.28"
+    },
+    "@angular-devkit/core": {
+      "ajv": "8.20.0",
+      "picomatch": "4.0.7"
+    },
+    "@nestjs/cli": {
+      "glob": "11.1.0",
+      "webpack": "^5.111.0"
+    },
+    "@next/eslint-plugin-next": {
+      "glob": "11.1.0"
+    }
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "dependencies": {
+    "mongo": "^0.1.0",
+    "mongodb": "^7.6.0",
+    "uri": "^0.1.0"
+  },
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
