@@ -42,21 +42,31 @@ services:
     #     they are CVE pins for qs, body-parser, multer, ajv, and picomatch.
     #   - The `typescript` entry in overrides makes 5.9.3 authoritative, so a
     #     plain install cannot float forward to a version that drops node10.
-    buildCommand: rm -rf node_modules && npm install && npm run build:shared && npm run build:sdk && npm run build:backend
+    #   - `--include=dev` forces devDependencies in explicitly. Render's native
+    #     Node builder may export NODE_ENV=production for the build step on its
+    #     own, and npm silently turns that into "skip devDependencies", which
+    #     strips typescript and @nestjs/cli and breaks `nest build`. Passing
+    #     --include=dev makes the install correct no matter what the environment
+    #     says, instead of depending on NODE_ENV being unset.
+    buildCommand: rm -rf node_modules && npm install --include=dev && npm run build:shared && npm run build:sdk && npm run build:backend
 
-    # NOT `npm start` — that fans out to every workspace and tries to boot the
-    # frontend and biometric bridge too, which crash-loops the free instance.
-    # The compiled entry is nested because dist/apps/backend mirrors the
-    # apps/backend/src source tree.
-    startCommand: node apps/backend/dist/apps/backend/src/main
+    # NODE_ENV=production is set HERE, at runtime, and deliberately NOT in
+    # envVars below. Render applies envVars to the build step as well, and
+    # npm treats NODE_ENV=production as "omit devDependencies" — which strips
+    # out typescript, @nestjs/cli and husky, so `nest build` cannot run and the
+    # build dies with "sh: 1: husky: not found". Scoping it to startCommand
+    # keeps the full toolchain available while the app still boots in
+    # production mode (secure cookies, strict helmet, no dev logging).
+    startCommand: NODE_ENV=production node apps/backend/dist/apps/backend/src/main
 
     healthCheckPath: /api/v1/health
     autoDeploy: true
 
     envVars:
       # ─── Fixed values ──────────────────────────────────────────────────────
-      - key: NODE_ENV
-        value: production
+      # NODE_ENV is intentionally absent - see the note on startCommand above.
+      #   - key: NODE_ENV
+      #     value: production
       # Documents go to MongoDB GridFS, not the container's disk — the free
       # instance's filesystem is wiped on every deploy.
       - key: STORAGE_PROVIDER

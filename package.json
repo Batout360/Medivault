@@ -33,7 +33,7 @@
     "lint:fix": "npm run lint:fix --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "clean": "rimraf \"apps/*/dist\" \"apps/*/.next\" \"packages/*/dist\" \"node_modules/.cache\"",
-    "prepare": "husky install"
+    "prepare": "husky || true"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
