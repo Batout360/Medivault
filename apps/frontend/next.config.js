@@ -116,7 +116,26 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              isDev ? "script-src 'self' 'unsafe-eval' 'unsafe-inline'" : "script-src 'self'",
+              // 'unsafe-inline' is required in production too, not just dev.
+              // Next.js emits inline <script> tags for its bootstrap payload,
+              // hydration state and framework runtime on every page, and a bare
+              // "script-src 'self'" blocks all of them — the app boots to a
+              // blank page and the console fills with CSP violations, which is
+              // exactly what happens on a production build. Hashes are not a
+              // workaround here: the inline content changes on every build, so
+              // any allowlist would break on the next deploy.
+              //
+              // The stricter alternative is per-request nonces, which needs a
+              // middleware that reads the CSP header, generates a nonce, and
+              // sets it on the request so Next.js echoes it onto its inline
+              // tags. That forces every page to render dynamically, which costs
+              // throughput and breaks static optimisation — a poor trade for a
+              // self-hosted app on a free tier. Everything else stays locked
+              // down: object-src 'none', frame-ancestors 'none', base-uri 'self',
+              // form-action 'self', and a connect-src limited to 'self'.
+              isDev
+                ? "script-src 'self' 'unsafe-eval' 'unsafe-inline'"
+                : "script-src 'self' 'unsafe-inline'",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               `connect-src ${connectSrc}`,
