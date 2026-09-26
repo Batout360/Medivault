@@ -71,7 +71,15 @@ const envValidationSchema = Joi.object({
     // ─── Configuration ───────────────────────────────────────────────────────
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env.local', '.env'],
+      // CWD-relative paths, so these only resolve when the process is started
+      // from apps/backend (e.g. `nest start`). Prefixing the backend-relative
+      // paths lets `node apps/backend/dist/...` be run from the repo root too.
+      envFilePath: [
+        'apps/backend/.env.local',
+        'apps/backend/.env',
+        '.env.local',
+        '.env',
+      ],
       validationSchema: envValidationSchema,
       validationOptions: { abortEarly: false, allowUnknown: true },
     }),

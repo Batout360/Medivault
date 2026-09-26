@@ -8,6 +8,11 @@
     "packages/*"
   ],
   "scripts": {
+    "setup:local": "npm run build:shared && npm run build:sdk && npm run build:backend && npm run build:frontend",
+    "start:local": "concurrently --kill-others-on-fail --names \"api,web\" --prefix-colors \"cyan,magenta\" \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "node apps/backend/dist/apps/backend/src/main",
+    "start:frontend": "npm run start --workspace=apps/frontend",
+    "start:bridge": "npm run start --workspace=apps/biometric-bridge",
     "dev": "concurrently --kill-others-on-fail \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:bridge\"",
     "dev:backend": "npm run dev --workspace=apps/backend",
     "dev:frontend": "npm run dev --workspace=apps/frontend",
