@@ -1,0 +1,93 @@
+# Render Blueprint — Medivault backend
+#
+# The frontend is deliberately NOT declared here. It deploys to Vercel and is
+# configured by vercel.json at the repository root.
+#
+# Only the backend is a service on Render. The biometric-bridge is a local
+# Windows desktop app (it binds 127.0.0.1 and talks to a USB fingerprint
+# scanner), so it must never be started here.
+
+services:
+  - type: web
+    name: medivault-backend
+    runtime: node
+
+    # Render's Free instance is 0.1 CPU / 512 MB and idles out after 15 minutes.
+    # NestJS plus a MongoDB connection does not fit, and the cold start is far too
+    # slow for a medical app. Starter is the smallest usable tier.
+    plan: starter
+
+    # Must be the repository root, not apps/backend. This is an npm workspaces
+    # monorepo: the build needs packages/* present, and the compiled backend
+    # resolves @medivault/shared and @medivault/mfs100-sdk through the workspace
+    # symlinks at runtime.
+    rootDir: .
+
+    # Both workspace packages must be compiled before the backend, because the
+    # emitted JS still calls require("@medivault/shared") and
+    # require("@medivault/mfs100-sdk") at runtime.
+    buildCommand: npm run build:shared && npm run build:sdk && npm run build:backend
+
+    # `nest build` infers the monorepo root as rootDir (the backend tsconfig
+    # `paths` point outside apps/backend), so the entry point is nested.
+    # Do NOT use `npm start` here — it fans out to every workspace and crashes on
+    # the frontend and biometric-bridge, which are not part of this service.
+    startCommand: node apps/backend/dist/apps/backend/src/main
+
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+
+    envVars:
+      # ── Fixed values ────────────────────────────────────────────────────────
+      - key: NODE_ENV
+        value: production
+
+      # gridfs keeps uploaded documents inside MongoDB. The `local` default writes
+      # to ./uploads, which Render wipes on every deploy.
+      - key: STORAGE_PROVIDER
+        value: gridfs
+
+      # mfs100 is the only value the Joi schema accepts. Setting "mock" fails
+      # validation and the process will not boot. The provider itself is inert on
+      # Linux because the MFS100.dll FFI load is win32-gated.
+      - key: BIOMETRIC_PROVIDER
+        value: mfs100
+
+      # ── Set these at deploy time (Render prompts you for every `sync: false`) ──
+      #
+      # These are deliberately NOT `generateValue: true`. MFA_ENCRYPTION_KEY and
+      # QR_ENCRYPTION_KEY encrypt values that are persisted in MongoDB, so a
+      # regenerated key would make existing records permanently unreadable.
+      # Entering them once keeps them stable across deploys.
+
+      - key: DATABASE_URL
+        sync: false
+
+      - key: JWT_ACCESS_SECRET
+        sync: false
+
+      - key: JWT_REFRESH_SECRET
+        sync: false
+
+      - key: COOKIE_SECRET
+        sync: false
+
+      - key: MFA_ENCRYPTION_KEY
+        sync: false
+
+      - key: QR_ENCRYPTION_KEY
+        sync: false
+
+      - key: BIOMETRIC_ENCRYPTION_KEY
+        sync: false
+
+      - key: STORAGE_SIGNING_SECRET
+        sync: false
+
+      # Add the deployed Vercel origin here, with no trailing slash.
+      # Leave blank on the first deploy and fill it in once Vercel is live.
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+
+      - key: FRONTEND_URL
+        sync: false
