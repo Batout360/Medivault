@@ -138,15 +138,32 @@ const nextConfig = {
 
   // ─── API Rewrites ────────────────────────────────────────────────────────
   async rewrites() {
-    const apiBaseUrl =
-      process.env.BACKEND_API_URL ??
-      process.env.NEXT_PUBLIC_API_URL ??
-      'http://localhost:3001';
+    // The browser talks to a relative NEXT_PUBLIC_API_URL ("/api/v1"), so all API
+    // calls are proxied server-side through this rewrite — same-origin, which is
+    // why the CSP only needs 'self'.
+    //
+    // BACKEND_API_URL must be an ABSOLUTE origin. Falling back to
+    // NEXT_PUBLIC_API_URL here would be a bug: if that is the relative "/api/v1",
+    // the destination becomes "/api/v1/api/v1/..." and Next proxies to itself in
+    // an endless loop. So only rewrite when we have a real absolute origin.
+    const candidates = [process.env.BACKEND_API_URL, process.env.NEXT_PUBLIC_API_URL];
+    const apiBaseUrl = candidates.find(
+      (value) => typeof value === 'string' && /^https?:\/\/[^/\s]+/.test(value),
+    );
+
+    if (!apiBaseUrl) {
+      console.warn(
+        '[next.config] BACKEND_API_URL is not set to an absolute origin — ' +
+          'API requests will not be proxied. Set BACKEND_API_URL in your ' +
+          'deployment environment.',
+      );
+      return [];
+    }
 
     return [
       {
         source: '/api/:path*',
-        destination: `${apiBaseUrl}/api/:path*`,
+        destination: `${apiBaseUrl.replace(/\/+$/, '')}/api/:path*`,
       },
     ];
   },
