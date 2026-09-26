@@ -27,7 +27,17 @@ services:
 
     # packages/shared and packages/mfs100-sdk must be compiled before the
     # backend, which requires their dist/ output at build time.
-    buildCommand: npm run build:shared && npm run build:sdk && npm run build:backend
+    #
+    # `npm ci` is deliberate and must stay first. Render caches node_modules
+    # between builds, so a plain `npm install` can keep serving a stale
+    # TypeScript from an earlier build even after package.json pins a version.
+    # `npm ci` deletes node_modules and installs strictly from package-lock.json,
+    # so the compiler version is whatever the lockfile says. It also fails loudly
+    # and immediately if package.json and the lockfile ever drift apart, which is
+    # better than a confusing type error three steps later.
+    #
+    # Do not use `npm install` here. It will not reliably clear the cache.
+    buildCommand: npm ci && npm run build:shared && npm run build:sdk && npm run build:backend
 
     # NOT `npm start` — that fans out to every workspace and tries to boot the
     # frontend and biometric bridge too, which crash-loops the free instance.
