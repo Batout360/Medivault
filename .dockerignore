@@ -1,0 +1,52 @@
+# Build context is the repository root for both app images, so everything
+# irrelevant to a container build has to be excluded explicitly.
+node_modules
+**/node_modules
+
+# Compiled output — regenerated inside the image
+dist
+**/dist
+.next
+**/.next
+out
+**/out
+*.tsbuildinfo
+
+# Secrets. .env/.env.local are gitignored but still present on a dev machine and
+# would otherwise be copied into the image.
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# VCS / CI
+.git
+.gitignore
+.github
+.husky
+
+# Editor / OS noise
+.vscode
+.idea
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs, coverage, caches
+*.log
+npm-debug.log*
+coverage
+**/coverage
+.nyc_output
+.cache
+**/.cache
+.turbo
+.eslintcache
+
+# Docs and assets not needed at runtime
+docs
+logo
+*.md
+!README.md

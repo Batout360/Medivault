@@ -1,11 +1,19 @@
 # Medivault — Docker Compose (Development)
 #
 # Services:
-#   mysql     — Primary database (MySQL 8, utf8mb4)
-#   redis     — Session store, rate limiting, caching
-#   minio     — S3-compatible local object storage for documents
+#   mongo     — Primary database (MongoDB 7). The backend uses Mongoose, NOT
+#               Prisma — see apps/backend/src/database/database.module.ts. The
+#               prisma/ directory and schema.prisma are vestigial MySQL artifacts
+#               and are intentionally not used here.
+#   redis     — Shared store for @nestjs/throttler. The app falls back to
+#               in-memory throttling when Redis is absent, which is per-process
+#               and therefore not safe once more than one instance is running.
 #   backend   — NestJS API server
 #   frontend  — Next.js frontend
+#
+# Document storage defaults to STORAGE_PROVIDER=local for dev so uploaded files
+# land on disk where they can be inspected. Production should use
+# STORAGE_PROVIDER=gridfs, which keeps documents inside MongoDB.
 #
 # Usage:
 #   docker compose up          # Start all services
@@ -13,15 +21,11 @@
 #   docker compose down        # Stop and remove containers
 #   docker compose down -v     # Stop + delete volumes (WARNING: destroys data)
 
-version: '3.9'
-
 # ─── Named volumes ──────────────────────────────────────────────────────────────
 volumes:
-  mysql_data:
+  mongo_data:
     driver: local
   redis_data:
-    driver: local
-  minio_data:
     driver: local
 
 # ─── Network ───────────────────────────────────────────────────────────────────
@@ -30,34 +34,35 @@ networks:
     driver: bridge
 
 services:
-  # ─── MySQL 8 ─────────────────────────────────────────────────────────────────
-  mysql:
-    image: mysql:8.0
-    container_name: medivault_mysql
+  # ─── MongoDB 7 ───────────────────────────────────────────────────────────────
+  # Runs as a single-node replica set: Mongoose features that require
+  # transactions are unavailable on a standalone mongod.
+  mongo:
+    image: mongo:7
+    container_name: medivault_mongo
     restart: unless-stopped
+    command: ['--replSet', 'rs0', '--bind_ip_all']
     environment:
-      MYSQL_ROOT_PASSWORD: medivault_root_password_change_in_prod
-      MYSQL_DATABASE: medivault
-      MYSQL_USER: medivault_user
-      MYSQL_PASSWORD: medivault_dev_password_change_in_prod
+      MONGO_INITDB_ROOT_USERNAME: medivault_root
+      MONGO_INITDB_ROOT_PASSWORD: medivault_root_password_change_in_prod
     volumes:
-      - mysql_data:/var/lib/mysql
-    # No host port binding — XAMPP MySQL already uses 3306 locally.
-    # Other Docker services (backend container) connect via the medivault_net network.
+      - mongo_data:/data/db
+    ports:
+      - '27017:27017'
     networks:
       - medivault_net
-    command: >
-      --character-set-server=utf8mb4
-      --collation-server=utf8mb4_unicode_ci
-      --default-authentication-plugin=mysql_native_password
     healthcheck:
-      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-umedivault_user', '-pmedivault_dev_password_change_in_prod']
+      test: >
+        mongosh --quiet --eval "
+          try { rs.status().ok }
+          catch (e) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo:27017'}]}).ok }
+        "
       interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
 
-  # ─── Redis ───────────────────────────────────────────────────────────────────
+  # ─── Redis 7 ─────────────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: medivault_redis
@@ -75,47 +80,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # ─── MinIO (S3-compatible local object storage) ───────────────────────────────
-  minio:
-    image: minio/minio:latest
-    container_name: medivault_minio
-    restart: unless-stopped
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: medivault_minio_user
-      MINIO_ROOT_PASSWORD: medivault_minio_dev_password
-    volumes:
-      - minio_data:/data
-    ports:
-      - '9000:9000'    # API
-      - '9001:9001'    # Console UI
-    networks:
-      - medivault_net
-    healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
-      interval: 30s
-      timeout: 20s
-      retries: 3
-
-  # ─── MinIO bucket initialisation ─────────────────────────────────────────────
-  # Creates the medivault-documents bucket on first run.
-  minio_init:
-    image: minio/mc:latest
-    container_name: medivault_minio_init
-    depends_on:
-      minio:
-        condition: service_healthy
-    networks:
-      - medivault_net
-    entrypoint: >
-      /bin/sh -c "
-        mc alias set myminio http://minio:9000 medivault_minio_user medivault_minio_dev_password &&
-        mc mb --ignore-existing myminio/medivault-documents &&
-        mc anonymous set none myminio/medivault-documents &&
-        echo 'MinIO bucket initialised.'
-      "
-    restart: on-failure
-
   # ─── Backend (NestJS) ────────────────────────────────────────────────────────
   backend:
     build:
@@ -125,45 +89,45 @@ services:
     container_name: medivault_backend
     restart: unless-stopped
     depends_on:
-      mysql:
+      mongo:
         condition: service_healthy
       redis:
         condition: service_healthy
     environment:
       NODE_ENV: development
       PORT: 3001
-      DATABASE_URL: mongodb://medivault_user:medivault_dev_password_change_in_prod@mongo:27017/medivault
-      # Redis — app.module.ts reads REDIS_HOST / REDIS_PORT / REDIS_PASSWORD, not REDIS_URL
+      # Joi in app.module.ts only accepts mongodb:// or mongodb+srv:// URLs.
+      DATABASE_URL: mongodb://medivault_root:medivault_root_password_change_in_prod@mongo:27017/medivault?authSource=admin
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: medivault_redis_dev_password
       REDIS_DB: 0
-      # JWT — app.module.ts reads JWT_ACCESS_SECRET / JWT_REFRESH_SECRET
       JWT_ACCESS_SECRET: dev_jwt_access_secret_min_32_chars_changeme_now
       JWT_REFRESH_SECRET: dev_jwt_refresh_secret_min_32_chars_changeme_now
       JWT_ACCESS_EXPIRES_IN: 15m
       JWT_REFRESH_EXPIRES_IN: 7d
       COOKIE_SECRET: dev_cookie_secret_min_32_chars_changeme
       CORS_ALLOWED_ORIGINS: http://localhost:3000
-      STORAGE_PROVIDER: minio
-      MINIO_ENDPOINT: minio
-      MINIO_PORT: 9000
-      MINIO_USE_SSL: 'false'
-      MINIO_ACCESS_KEY: medivault_minio_user
-      MINIO_SECRET_KEY: medivault_minio_dev_password
-      MINIO_BUCKET: medivault-documents
-      BIOMETRIC_PROVIDER: mock
+      STORAGE_PROVIDER: local
+      STORAGE_LOCAL_PATH: /app/uploads
+      # Only "mfs100" is accepted by the Joi schema; biometrics are inert on Linux.
+      BIOMETRIC_PROVIDER: mfs100
       BIOMETRIC_ENCRYPTION_KEY: dev_biometric_enc_key_min_32_chars_change
       MFA_ENCRYPTION_KEY: dev_mfa_encryption_key_min_32_chars_change_me
+      QR_ENCRYPTION_KEY: dev_qr_encryption_key_min_32_chars_change_me
       STORAGE_SIGNING_SECRET: dev_storage_signing_secret_32_chars_change
+      FRONTEND_URL: http://localhost:3000
+      THROTTLE_TTL: 60
+      THROTTLE_LIMIT: 600
     volumes:
-      - ./apps/backend/src:/app/src:delegated
-      - ./apps/backend/prisma:/app/prisma:delegated
+      - ./apps/backend/src:/app/apps/backend/src:delegated
+      - ./apps/backend/prisma:/app/apps/backend/prisma:delegated
+      - ./apps/backend/uploads:/app/uploads
     ports:
       - '3001:3001'
     networks:
       - medivault_net
-    command: sh -c "npx prisma migrate dev && npm run start:dev"
+    command: npm run dev
 
   # ─── Frontend (Next.js) ──────────────────────────────────────────────────────
   frontend:
@@ -178,11 +142,11 @@ services:
     environment:
       NODE_ENV: development
       NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
-      BACKEND_API_URL: http://backend:3001/api/v1
+      BACKEND_API_URL: http://backend:3001
       NEXT_PUBLIC_BIOMETRIC_MOCK: 'true'
     volumes:
-      - ./apps/frontend/src:/app/src:delegated
-      - ./apps/frontend/public:/app/public:delegated
+      - ./apps/frontend/src:/app/apps/frontend/src:delegated
+      - ./apps/frontend/public:/app/apps/frontend/public:delegated
     ports:
       - '3000:3000'
     networks:
