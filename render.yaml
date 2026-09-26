@@ -12,10 +12,20 @@ services:
     name: medivault-backend
     runtime: node
 
-    # Render's Free instance is 0.1 CPU / 512 MB and idles out after 15 minutes.
-    # NestJS plus a MongoDB connection does not fit, and the cold start is far too
-    # slow for a medical app. Starter is the smallest usable tier.
-    plan: starter
+    # FREE TIER. Read the tradeoffs before using this in anger:
+    #   - 0.1 CPU / 512 MB. Enough for the backend alone (MongoDB is external,
+    #     in Atlas), but there is no room to also run the frontend here.
+    #   - Spins down after 15 minutes without traffic, and takes ~1 minute to
+    #     wake. During that window getServerSession() returns null, so anyone
+    #     returning to the site is bounced to /login and must re-authenticate.
+    #   - Ephemeral filesystem: anything written outside MongoDB is lost on
+    #     every deploy. This is why STORAGE_PROVIDER must stay `gridfs`.
+    #   - No persistent disk and no SSH shell on the free instance.
+    #   - Render cannot run free instances inside a HIPAA-enabled workspace;
+    #     upgrading to one migrates and suspends them.
+    # Upgrade to `starter` when this becomes painful. The first change needed is
+    # usually Memory-optimized, not Starter.
+    plan: free
 
     # Must be the repository root, not apps/backend. This is an npm workspaces
     # monorepo: the build needs packages/* present, and the compiled backend
