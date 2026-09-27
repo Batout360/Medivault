@@ -3,5 +3,11 @@
   "framework": "nextjs",
   "installCommand": "npm install",
   "buildCommand": "npm run build:shared && npm run build --workspace=apps/frontend",
-  "outputDirectory": "apps/frontend/.next"
+  "outputDirectory": "apps/frontend/.next",
+  "rewrites": [
+    {
+      "source": "/api/v1/:path*",
+      "destination": "https://medivault-api-9iud.onrender.com/api/v1/:path*"
+    }
+  ]
 }
