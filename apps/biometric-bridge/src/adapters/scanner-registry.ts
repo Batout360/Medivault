@@ -67,6 +67,7 @@ export class ScannerRegistry extends EventEmitter {
 
       for (const device of devices) {
         const { idVendor, idProduct } = device.deviceDescriptor;
+        // idVendor/idProduct may be undefined on some libusb builds — guard both
         if (!idVendor || idVendor === 0) continue;
 
         for (const adapter of this.adapters) {

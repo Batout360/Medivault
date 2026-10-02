@@ -16,6 +16,18 @@
 
 export { MSOSdk, MSOSdkError, errorMessage, MSOErrorCode } from './sdk';
 export { findMsoDll } from './native-sdk';
+export {
+  loadMso100Sdk,
+  enumMsoDevices,
+  findMso100Dll,
+  findSpUsbDll,
+  resolvedMso100Path,
+  resolvedSpUsbPath,
+  HARDWARE_INFO_BUFFER_SIZE,
+  CAPTURE_OUTPUT_BUFFER_SIZE,
+  DESCRIPTOR_BUFFER_SIZE,
+} from './native-mso100';
+export type { MSO100Sdk } from './native-mso100';
 
 // Payload transport helpers (AES-256-GCM envelope + HMAC signature) are
 // identical to the mfs100-sdk implementation — import them directly from there

@@ -1,0 +1,10 @@
+{
+  "name": "mso-worker",
+  "version": "1.0.0",
+  "description": "32-bit IPC worker for MSO100.dll",
+  "main": "worker.js",
+  "private": true,
+  "dependencies": {
+    "koffi": "^3.3.1"
+  }
+}
