@@ -376,6 +376,9 @@ export class BiometricService {
 
   async healthCheck() {
     const healthy = await this.provider.healthCheck();
-    return { healthy, provider: 'mfs100' };
+    const provider = (
+      this.config.get<string>('BIOMETRIC_PROVIDER') ?? 'mso1300'
+    ).toLowerCase();
+    return { healthy, provider };
   }
 }

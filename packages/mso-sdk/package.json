@@ -1,0 +1,46 @@
+{
+  "name": "@medivault/mso-sdk",
+  "version": "1.0.0",
+  "description": "Native Idemia MSO 1300 E3 fingerprint scanner SDK wrapper (MorphoSmartCST.dll) built on FFI (koffi) for the Medivault biometric bridge and backend matcher",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "build:watch": "tsc --project tsconfig.json --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist",
+    "test": "jest"
+  },
+  "dependencies": {
+    "koffi": "^3.3.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.5.1",
+    "rimraf": "^5.0.5",
+    "ts-jest": "^29.4.12",
+    "typescript": "5.9.3"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "jest": {
+    "testEnvironment": "node",
+    "rootDir": "src",
+    "testRegex": ".*\\.(spec|test)\\.ts$",
+    "transform": {
+      "^.+\\.ts$": [
+        "ts-jest",
+        {
+          "tsconfig": "./tsconfig.json"
+        }
+      ]
+    },
+    "moduleNameMapper": {
+      "^@medivault/mfs100-sdk(.*)$": "<rootDir>/../../mfs100-sdk/src$1",
+      "^@medivault/mfs100-sdk$": "<rootDir>/../../mfs100-sdk/src/index.ts"
+    }
+  }
+}

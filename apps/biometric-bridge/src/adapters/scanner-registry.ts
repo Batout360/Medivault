@@ -5,8 +5,9 @@
  * each device to the best-matching adapter. Enable/override selection with the
  * BIOMETRIC_ADAPTER environment variable:
  *
- *   auto         (default) prefer real hardware detected on the USB bus
- *   mfs100       force the Mantra MFS100 adapter (production)
+ *   auto         (default) prefer MSO 1300 > MFS100 > generic-usb
+ *   mso1300      force the Idemia MSO 1300 E3 adapter (production)
+ *   mfs100       force the Mantra MFS100 adapter (legacy)
  *   generic-usb  force the raw USB transport (requires a vendor extractor)
  */
 import { EventEmitter } from 'events';
@@ -14,6 +15,7 @@ import { Logger } from 'pino';
 import { ScannerAdapter } from './adapter.interface';
 import { GenericUSBAdapter } from './generic-usb';
 import { MFS100Adapter } from './mfs100';
+import { MSO1300Adapter } from './mso1300';
 
 export interface DetectedDevice {
   vendorId: number;
@@ -23,7 +25,7 @@ export interface DetectedDevice {
   adapterId: string;
 }
 
-export type BiometricAdapterMode = 'auto' | 'mfs100' | 'generic-usb';
+export type BiometricAdapterMode = 'auto' | 'mso1300' | 'mfs100' | 'generic-usb';
 
 export class ScannerRegistry extends EventEmitter {
   private readonly adapters: ScannerAdapter[] = [];
@@ -39,11 +41,14 @@ export class ScannerRegistry extends EventEmitter {
     this.log = log;
 
     const requested = (process.env.BIOMETRIC_ADAPTER ?? 'auto').trim().toLowerCase();
-    this.mode = ['auto', 'mfs100', 'generic-usb'].includes(requested)
+    this.mode = (['auto', 'mso1300', 'mfs100', 'generic-usb'] as const).includes(
+      requested as BiometricAdapterMode,
+    )
       ? (requested as BiometricAdapterMode)
       : 'auto';
 
-    // Registration order = detection priority.
+    // Registration order = detection priority: MSO 1300 first, then MFS100, then generic.
+    this.adapters.push(new MSO1300Adapter());
     this.adapters.push(new MFS100Adapter());
     this.adapters.push(new GenericUSBAdapter());
   }
@@ -94,7 +99,7 @@ export class ScannerRegistry extends EventEmitter {
   /**
    * Initialize the active adapter.
    * - forced mode: exactly the requested adapter
-   * - auto mode: prefer a real MFS100 scanner, then a generic-usb device
+   * - auto mode:   prefer MSO 1300, then MFS100, then generic-usb
    */
   async initializePreferred(): Promise<ScannerAdapter> {
     if (this.activeAdapter) return this.activeAdapter;
@@ -102,14 +107,32 @@ export class ScannerRegistry extends EventEmitter {
     if (this.mode === 'generic-usb') {
       return this.activate(new GenericUSBAdapter());
     }
+    if (this.mode === 'mso1300') {
+      return this.activate(new MSO1300Adapter());
+    }
     if (this.mode === 'mfs100') {
       return this.activate(new MFS100Adapter());
     }
 
-    // auto mode
+    // auto mode — try MSO 1300 first, then MFS100, then generic-usb
     const detected = await this.detect();
-    const mfs100Device = detected.find((d) => d.adapterId === 'mfs100');
 
+    const mso1300Device = detected.find((d) => d.adapterId === 'mso1300');
+    if (mso1300Device) {
+      const mso = new MSO1300Adapter();
+      try {
+        return await this.activateWithDevice(mso, mso1300Device);
+      } catch (err) {
+        const reason = err instanceof Error ? err.message : String(err);
+        this.lastInitError = reason;
+        this.log.warn(
+          { err, device: mso1300Device.deviceName },
+          'MSO 1300 adapter initialization failed',
+        );
+      }
+    }
+
+    const mfs100Device = detected.find((d) => d.adapterId === 'mfs100');
     if (mfs100Device) {
       const mfs100 = new MFS100Adapter();
       try {
@@ -139,9 +162,9 @@ export class ScannerRegistry extends EventEmitter {
       }
     }
 
-    if (mfs100Device) {
+    if (mso1300Device) {
       throw new Error(
-        'Scanner detected but MFS100 SDK adapter could not start: ' + this.lastInitError,
+        'Scanner detected but MSO 1300 adapter could not start: ' + this.lastInitError,
       );
     }
     throw new Error('No supported fingerprint scanner detected.');

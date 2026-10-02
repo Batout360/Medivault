@@ -18,7 +18,9 @@
     "baseUrl": "./",
     "paths": {
       "@medivault/mfs100-sdk": ["../../packages/mfs100-sdk/src/index.ts"],
-      "@medivault/mfs100-sdk/*": ["../../packages/mfs100-sdk/src/*"]
+      "@medivault/mfs100-sdk/*": ["../../packages/mfs100-sdk/src/*"],
+      "@medivault/mso-sdk": ["../../packages/mso-sdk/src/index.ts"],
+      "@medivault/mso-sdk/*": ["../../packages/mso-sdk/src/*"]
     }
   },
   "include": ["src/**/*"],

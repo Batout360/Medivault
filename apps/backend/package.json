@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@medivault/mfs100-sdk": "*",
+    "@medivault/mso-sdk": "*",
     "@medivault/shared": "*",
     "@nestjs/common": "^11.2.5",
     "@nestjs/config": "^4.0.4",
@@ -108,7 +109,9 @@
     "testEnvironment": "node",
     "moduleNameMapper": {
       "^@medivault/shared(.*)$": "<rootDir>/../../../packages/shared/src$1",
-      "^@medivault/mfs100-sdk(.*)$": "<rootDir>/../../../packages/mfs100-sdk/src$1"
+      "^@medivault/mfs100-sdk(.*)$": "<rootDir>/../../../packages/mfs100-sdk/src$1",
+      "^@medivault/mso-sdk(.*)$": "<rootDir>/../../../packages/mso-sdk/src$1",
+      "^@medivault/mso-sdk$": "<rootDir>/../../../packages/mso-sdk/src/index.ts"
     }
   }
 }

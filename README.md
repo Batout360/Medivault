@@ -211,25 +211,70 @@ BIOMETRIC_PROVIDER=mock
 NEXT_PUBLIC_BIOMETRIC_MOCK=true
 ```
 
-### Production (Real Scanner)
+### Production (Idemia MSO 1300 E3)
+
+The default production scanner is the **Idemia MSO 1300 E3** (MorphoSmart series). It connects over USB and communicates through `MorphoSmartCST.dll` via the `@medivault/mso-sdk` FFI wrapper.
+
+**Fingerprint flow:**
+```
+[MSO 1300 E3 USB scanner]
+   │ USB (VID 0x1DCF / PID 0x0007)
+   ▼
+[biometric-bridge (local workstation)]        apps/biometric-bridge
+   │ WS ws://127.0.0.1:9876/ws
+   │ opaque "MV1:" AES-256-GCM ciphertext + HMAC
+   ▼
+[backend BiometricService]                    apps/backend
+   │ BIOMETRIC_PROVIDER=mso1300
+   │ MorphoSmartCST.dll (MINEX matching)
+   │ templates stored encrypted in MongoDB
+   ▼
+[frontend /fingerprint page]
+```
+
+**Bridge (workstation):**
+```env
+# apps/biometric-bridge/.env
+BIOMETRIC_ADAPTER=mso1300
+MSO_SDK_DLL=C:\Program Files\Idemia\MSO SDK\MorphoSmartCST.dll
+MSO_LICENSE_KEY=<license-from-idemia>
+BIOMETRIC_ENCRYPTION_KEY=<32+ random chars>   # SAME as backend
+BIOMETRIC_BRIDGE_SECRET=<32+ random chars>    # SAME as backend
+```
+
+**Backend:**
+```env
+# apps/backend/.env
+BIOMETRIC_PROVIDER=mso1300
+MSO_MATCH_THRESHOLD=14000     # raw SDK score 0–100000; lower = stricter
+MSO_SDK_DLL=C:\Program Files\Idemia\MSO SDK\MorphoSmartCST.dll
+MSO_LICENSE_KEY=<license-from-idemia>
+BIOMETRIC_ENCRYPTION_KEY=<same 32+ random chars>
+BIOMETRIC_BRIDGE_SECRET=<same 32+ random chars>
+```
+
+See [docs/biometric-hardware-setup.md](docs/biometric-hardware-setup.md) for full hardware installation and troubleshooting.
+
+### Legacy Scanner (Mantra MFS100)
+
+The MFS100 adapter is retained as a fallback. Switch with `BIOMETRIC_PROVIDER=mfs100` (backend) and `BIOMETRIC_ADAPTER=mfs100` (bridge).
+
+### Custom Vendor
+
 The `BiometricProvider` interface (`apps/backend/src/modules/biometric/providers/biometric-provider.interface.ts`) defines the contract. Implement a vendor-specific adapter:
 
 ```typescript
 // apps/backend/src/modules/biometric/providers/my-vendor.provider.ts
 export class MyVendorBiometricProvider implements BiometricProvider {
-  async enrollFingerprint(patientId, captureSessionToken) { ... }
-  async identifyFingerprint(captureSessionToken) { ... }
-  async verifyFingerprint(patientId, captureSessionToken) { ... }
-  async deleteTemplate(patientId) { ... }
+  async enroll(patientId, captureData) { ... }
+  async identify(captureData, gallery) { ... }
+  async verify(patientId, captureData, templates) { ... }
+  async deleteTemplates(patientId) { ... }
+  async healthCheck() { ... }
 }
 ```
 
-Set in `.env`:
-```env
-BIOMETRIC_PROVIDER=my-vendor
-```
-
-The frontend biometric page expects a local **biometric bridge** running on the workstation (a small background process provided by the scanner vendor SDK) that captures the fingerprint and returns a session token. This token is sent to the backend for matching — the raw fingerprint never reaches the application server.
+Then register it in `biometric.module.ts` under the `BIOMETRIC_PROVIDER` factory switch.
 
 ---
 
