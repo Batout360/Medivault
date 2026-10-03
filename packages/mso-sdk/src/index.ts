@@ -41,7 +41,7 @@ export {
   isEncryptedPayload,
   signBridgePayload,
   verifyBridgeSignature,
-} from '../../mfs100-sdk/src/payload';
+} from '@medivault/mfs100-sdk';
 
 export {
   DEFAULT_MSO_MATCH_THRESHOLD,

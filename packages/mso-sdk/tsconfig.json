@@ -19,8 +19,8 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@medivault/mfs100-sdk": ["../mfs100-sdk/src/index.ts"],
-      "@medivault/mfs100-sdk/*": ["../mfs100-sdk/src/*"]
+      "@medivault/mfs100-sdk": ["../mfs100-sdk/dist/index.d.ts", "../mfs100-sdk/src/index.ts"],
+      "@medivault/mfs100-sdk/*": ["../mfs100-sdk/dist/*", "../mfs100-sdk/src/*"]
     }
   },
   "include": ["src/**/*"],
