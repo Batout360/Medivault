@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
+import { UserRole } from '@medivault/shared';
 
 export interface AdminStats {
   totalUsers: number;
@@ -19,9 +20,13 @@ export class AdminService {
 
   constructor(@InjectConnection() private readonly connection: Connection) {}
 
-  async getStats(organizationId: string): Promise<AdminStats> {
+  async getStats(organizationId: string | null, role: string): Promise<AdminStats> {
     const now = new Date();
     const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    // SUPER_ADMIN accounts are platform-level with `organizationId === null` and must not
+    // be org-scoped (an empty-string org filter matches nothing and every stat reads 0).
+    const org = role === UserRole.SUPER_ADMIN ? {} : { organizationId: organizationId ?? null };
 
     const users = this.connection.collection('users');
     const patients = this.connection.collection('patients');
@@ -38,25 +43,27 @@ export class AdminService {
       failedLogins24h,
       storageResult,
     ] = await Promise.all([
-      users.countDocuments({ organizationId, deletedAt: null }),
-      users.countDocuments({ organizationId, isActive: true, deletedAt: null }),
-      patients.countDocuments({ organizationId, deletedAt: null }),
+      users.countDocuments({ ...org, deletedAt: null }),
+      users.countDocuments({ ...org, isActive: true, deletedAt: null }),
+      patients.countDocuments({ ...org, deletedAt: null }),
       patients.countDocuments({
-        organizationId,
+        ...org,
         deletedAt: null,
         biometricEnrolled: true,
       }),
       audits.countDocuments({
+        ...org,
         createdAt: { $gte: last24h },
         resourceType: 'SECURITY',
       }),
       audits.countDocuments({
+        ...org,
         createdAt: { $gte: last24h },
         eventType: 'FAILED_LOGIN',
       }),
       documents
         .aggregate([
-          { $match: { organizationId, deletedAt: null } },
+          { $match: { ...org, deletedAt: null } },
           { $group: { _id: null, total: { $sum: '$sizeBytes' } } },
         ])
         .toArray(),

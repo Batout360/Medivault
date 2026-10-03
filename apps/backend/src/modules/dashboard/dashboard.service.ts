@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
-import { PATIENT_ROLES } from '@medivault/shared';
+import { PATIENT_ROLES, UserRole } from '@medivault/shared';
 
 export interface DashboardStats {
   totalPatients: number;
@@ -19,7 +19,16 @@ export class DashboardService {
 
   constructor(@InjectConnection() private readonly connection: Connection) {}
 
-  async getStats(organizationId: string): Promise<DashboardStats> {
+  /**
+   * SUPER_ADMIN accounts are platform-level and have `organizationId === null`, so they
+   * must not be org-scoped (an empty-string org filter matches nothing and every stat
+   * reads 0). Everyone else is scoped to their own organization.
+   */
+  private orgFilter(organizationId: string | null, role: string): Record<string, unknown> {
+    return role === UserRole.SUPER_ADMIN ? {} : { organizationId: organizationId ?? null };
+  }
+
+  async getStats(organizationId: string | null, role: string): Promise<DashboardStats> {
     const now = new Date();
     const startOfToday = new Date(now);
     startOfToday.setHours(0, 0, 0, 0);
@@ -33,6 +42,8 @@ export class DashboardService {
     const docs = this.connection.collection('medical_records');
     const audits = this.connection.collection('audit_logs');
 
+    const org = this.orgFilter(organizationId, role);
+
     const [
       totalPatients,
       registrations30d,
@@ -43,39 +54,40 @@ export class DashboardService {
       fingerprintScansToday,
       recentAlerts,
     ] = await Promise.all([
-      patients.countDocuments({ organizationId, deletedAt: null }),
+      patients.countDocuments({ ...org, deletedAt: null }),
       patients.countDocuments({
-        organizationId,
+        ...org,
         deletedAt: null,
         registeredAt: { $gte: thirtyDaysAgo },
       }),
       patients.countDocuments({
-        organizationId,
+        ...org,
         deletedAt: null,
         registeredAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo },
       }),
       patients.countDocuments({
-        organizationId,
+        ...org,
         deletedAt: null,
         registeredAt: { $gte: startOfToday },
       }),
       users.countDocuments({
-        organizationId,
+        ...org,
         isActive: true,
         deletedAt: null,
         role: { $nin: PATIENT_ROLES },
       }),
       docs.countDocuments({
-        organizationId,
+        ...org,
         type: 'lab_report',
         deletedAt: null,
       }),
       audits.countDocuments({
-        organizationId,
+        ...org,
         createdAt: { $gte: startOfToday },
         action: { $in: ['IDENTIFY_BIOMETRIC', 'ENROLL_BIOMETRIC'] },
       }),
       audits.countDocuments({
+        ...org,
         createdAt: { $gte: last24h },
         $or: [{ result: 'failure' }, { result: 'security_event' }, { severity: { $ne: null } }],
       }),

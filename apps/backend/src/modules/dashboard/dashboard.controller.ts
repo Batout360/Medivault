@@ -32,6 +32,6 @@ export class DashboardController {
     summary: 'Get dashboard statistics for the current organization',
   })
   getStats(@CurrentUser() user: AccessTokenPayload) {
-    return this.dashboardService.getStats(user.organizationId ?? '');
+    return this.dashboardService.getStats(user.organizationId ?? null, user.role);
   }
 }

@@ -22,6 +22,6 @@ export class AdminController {
     summary: 'Get admin panel statistics for the current organization',
   })
   getStats(@CurrentUser() user: AccessTokenPayload) {
-    return this.adminService.getStats(user.organizationId ?? '');
+    return this.adminService.getStats(user.organizationId ?? null, user.role);
   }
 }
