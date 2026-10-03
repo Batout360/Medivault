@@ -38,6 +38,23 @@ function triggerDownload(name: string, src: string | Blob) {
   if (typeof src !== 'string') setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+/**
+ * Normalize a fetched image blob into a data URL.
+ *
+ * The card SVG is rasterized from a `data:image/svg+xml` URL, which runs in an
+ * opaque origin and therefore cannot resolve `blob:` URLs. Keeping the QR as a
+ * self-contained data URL makes it render in the downloaded card, in the print
+ * view and in the QR-only download.
+ */
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error('Could not read the QR code image.'));
+    reader.readAsDataURL(blob);
+  });
+}
+
 /** Rasterize computed SVG markup to a PNG blob (all content is data-URL safe). */
 async function svgToPngBlob(svg: string, width = 1200): Promise<Blob> {
   const height = Math.round(width * 0.62);
@@ -129,9 +146,9 @@ function buildCardSvg(card: MedicalProfileCard, qrDataUrl: string): string {
   <text x="48" y="610" class="label">EMERGENCY CONTACT</text>
   <text x="48" y="648" class="value-muted" font-size="26">${ec ? `${escapeXml(ec.name)} · ${escapeXml(ec.relationship)} · ${escapeXml(ec.phone)}` : 'Not recorded'}</text>
 
-  <rect x="880" y="480" width="248" height="248" rx="20" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
-  <image x="892" y="492" width="224" height="224" href="${qrDataUrl}"/>
-  <text x="1004" y="760" text-anchor="middle" class="label" fill="#64748b">Scan to verify</text>
+  <rect x="892" y="478" width="216" height="216" rx="20" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+  <image x="904" y="490" width="192" height="192" href="${qrDataUrl}"/>
+  <text x="1000" y="724" text-anchor="middle" class="label" font-size="20" fill="#64748b">Scan to verify</text>
 </svg>`;
 }
 
@@ -173,7 +190,7 @@ export function MedicalProfileCardView({
   const fullName = `${p.firstName} ${p.lastName}`;
   const isActive = card.qr.status === 'ACTIVE';
 
-  const [qrSrc, setQrSrc] = React.useState<string | null>(freshQrDataUrl ?? null);
+  const [qrDataUrl, setQrDataUrl] = React.useState<string | null>(freshQrDataUrl ?? null);
   const [action, setAction] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -181,18 +198,19 @@ export function MedicalProfileCardView({
   // fresh generation happened in this session.
   React.useEffect(() => {
     if (freshQrDataUrl) {
-      setQrSrc(freshQrDataUrl);
+      setQrDataUrl(freshQrDataUrl);
       return;
     }
     if (!isActive) {
-      setQrSrc(null);
+      setQrDataUrl(null);
       return;
     }
     let revoked = false;
     apiClient
       .get(`/medical-profile/patients/${p.id}/qr.png`, { responseType: 'blob' })
-      .then((res) => {
-        if (!revoked) setQrSrc(URL.createObjectURL(res.data as Blob));
+      .then(async (res) => {
+        const dataUrl = await blobToDataUrl(res.data as Blob);
+        if (!revoked) setQrDataUrl(dataUrl);
       })
       .catch(() => {
         /* QR PNG may 404 if the code was revoked between fetches */
@@ -210,7 +228,7 @@ export function MedicalProfileCardView({
         `/medical-profile/patients/${p.id}/qr`,
         { baseUrl: window.location.origin },
       );
-      setQrSrc(res.data.qrDataUrl);
+      setQrDataUrl(res.data.qrDataUrl);
       onRefresh?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not generate QR code.');
@@ -225,7 +243,7 @@ export function MedicalProfileCardView({
     setError(null);
     try {
       await apiClient.post(`/medical-profile/patients/${p.id}/qr/revoke`);
-      setQrSrc(null);
+      setQrDataUrl(null);
       onRefresh?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not revoke QR code.');
@@ -235,15 +253,15 @@ export function MedicalProfileCardView({
   };
 
   const handleDownloadQr = () => {
-    if (!qrSrc) return;
-    triggerDownload(`medical-card-qr-${p.mrn}.png`, qrSrc);
+    if (!qrDataUrl) return;
+    triggerDownload(`medical-card-qr-${p.mrn}.png`, qrDataUrl);
   };
 
   const handleDownloadCard = async () => {
-    if (!qrSrc) return;
+    if (!qrDataUrl) return;
     setError(null);
     try {
-      const blob = await svgToPngBlob(buildCardSvg(card, qrSrc), 1200);
+      const blob = await svgToPngBlob(buildCardSvg(card, qrDataUrl), 1200);
       triggerDownload(`medical-card-${p.mrn}.png`, blob);
     } catch {
       setError('Could not generate the card image in this browser.');
@@ -251,7 +269,7 @@ export function MedicalProfileCardView({
   };
 
   const handlePrint = () => {
-    if (!qrSrc) return;
+    if (!qrDataUrl) return;
     const w = window.open('', '_blank', 'width=820,height=600');
     if (!w) return;
     w.document.write(`<!doctype html><html><head><title>Medical Card — ${fullName}</title>
@@ -266,7 +284,7 @@ export function MedicalProfileCardView({
         .val{font-weight:600;font-size:15px;margin-top:2px}
         .full{grid-column:1 / -1}
         @media print{ body{margin:0} }
-      </style></head><body onload="window.print()">${buildPrintHtml(card, qrSrc)}</body></html>`);
+      </style></head><body onload="window.print()">${buildPrintHtml(card, qrDataUrl)}</body></html>`);
     w.document.close();
   };
 
@@ -387,10 +405,10 @@ export function MedicalProfileCardView({
         </div>
 
         {/* QR strip */}
-        {isActive && qrSrc && (
+        {isActive && qrDataUrl && (
           <div className="flex items-center gap-5 border-t border-border px-6 py-5 bg-muted/40">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={qrSrc} alt={`QR code for ${fullName}`} className="h-36 w-36 rounded-lg border border-border bg-white p-1" />
+            <img src={qrDataUrl} alt={`QR code for ${fullName}`} className="h-36 w-36 rounded-lg border border-border bg-white p-1" />
             <div className="space-y-1">
               <p className="flex items-center gap-1.5 text-sm font-medium">
                 <QrCode className="h-4 w-4 text-primary" />
@@ -412,18 +430,18 @@ export function MedicalProfileCardView({
         <div className="flex flex-wrap items-center gap-2">
           {isActive ? (
             <>
-              <Button size="sm" variant="outline" onClick={handleDownloadQr} disabled={!qrSrc}>
+              <Button size="sm" variant="outline" onClick={handleDownloadQr} disabled={!qrDataUrl}>
                 <Download className="h-3.5 w-3.5" /> Download QR
               </Button>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => void handleDownloadCard()}
-                disabled={!qrSrc}
+                disabled={!qrDataUrl}
               >
                 <Download className="h-3.5 w-3.5" /> Download Card
               </Button>
-              <Button size="sm" variant="outline" onClick={handlePrint} disabled={!qrSrc}>
+              <Button size="sm" variant="outline" onClick={handlePrint} disabled={!qrDataUrl}>
                 <Printer className="h-3.5 w-3.5" /> Print Card
               </Button>
               <Button
