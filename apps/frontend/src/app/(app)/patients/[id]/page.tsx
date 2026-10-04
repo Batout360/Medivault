@@ -129,8 +129,9 @@ function displayBloodGroup(value: string | null): string {
   return BLOOD_GROUP_LABELS[value.toUpperCase()] ?? value;
 }
 
-function displayGender(value: string): string {
-  const normalized = value.toUpperCase();
+function displayGender(value: string | null | undefined): string {
+  const normalized = (value ?? '').trim().toUpperCase();
+  if (!normalized) return '—';
   if (normalized === 'PREFER_NOT_TO_SAY') return 'Prefer not to say';
   return normalized.charAt(0) + normalized.slice(1).toLowerCase();
 }
@@ -208,8 +209,125 @@ interface LabReport {
   notes: string | null;
 }
 
+/**
+ * Raw document as returned by the medical-record endpoints.
+ *
+ * Every clinical record — encounter, diagnosis, prescription, lab report, vital
+ * — lives in a single polymorphic `medical_records` collection: the shared
+ * envelope is `_id` / `type` / `authorId` / `createdAt`, and the record-specific
+ * fields are nested under `data`. The view-models above are flat, so each list
+ * response has to be projected before it is rendered.
+ */
+interface MedicalRecordDoc {
+  _id: string;
+  type?: string;
+  authorId?: string | null;
+  createdAt?: string;
+  data?: Record<string, unknown> | null;
+}
+
+function str(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() !== '' ? value : null;
+}
+
+function num(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+/**
+ * Lab results are stored as a free-form object (`{ haemoglobin: '13.2' }`).
+ * Render a single measurement plainly and fall back to a compact JSON listing
+ * so an object is never handed to React as a child.
+ */
+function formatLabResult(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>);
+    if (entries.length === 0) return null;
+    if (entries.length === 1) {
+      const [key, single] = entries[0];
+      const flat = typeof single === 'object' ? null : single;
+      return flat === null || flat === undefined
+        ? `${key}: ${JSON.stringify(single)}`
+        : `${key}: ${String(flat)}`;
+    }
+    return entries.map(([key, val]) => `${key}: ${String(val)}`).join(', ');
+  }
+  return String(value);
+}
+
+function toDiagnosis(doc: MedicalRecordDoc): Diagnosis {
+  const data = doc.data ?? {};
+  return {
+    id: doc._id,
+    icdCode: str(data.diagnosisCode),
+    name: str(data.diagnosisName) ?? 'Diagnosis',
+    description: str(data.notes),
+    severity: str(data.severity) ?? 'UNKNOWN',
+    status: str(data.status) ?? 'ACTIVE',
+    diagnosedAt: str(data.diagnosedAt) ?? doc.createdAt ?? '',
+    diagnosedBy: doc.authorId ?? '—',
+    resolvedAt: null,
+  };
+}
+
+function toPrescription(doc: MedicalRecordDoc): Prescription {
+  const data = doc.data ?? {};
+  return {
+    id: doc._id,
+    medicationName: str(data.medicationName) ?? 'Unknown medication',
+    dosage: str(data.dosage) ?? '—',
+    frequency: str(data.frequency) ?? '—',
+    route: str(data.route) ?? '—',
+    startDate: str(data.prescribedAt) ?? doc.createdAt ?? '',
+    endDate: str(data.expiresAt),
+    instructions: str(data.instructions),
+    prescribedBy: str(data.prescribedById) ?? doc.authorId ?? '—',
+    status: data.isActive === false ? 'INACTIVE' : 'ACTIVE',
+  };
+}
+
+function toVital(doc: MedicalRecordDoc): Vital {
+  const data = doc.data ?? {};
+  return {
+    id: doc._id,
+    recordedAt: str(data.recordedAt) ?? doc.createdAt ?? '',
+    bloodPressureSystolic: num(data.bloodPressureSystolic),
+    bloodPressureDiastolic: num(data.bloodPressureDiastolic),
+    heartRate: num(data.heartRate),
+    temperature: num(data.temperature),
+    respiratoryRate: num(data.respiratoryRate),
+    oxygenSaturation: num(data.oxygenSaturation),
+    weight: num(data.weight),
+    height: num(data.height),
+    bmi: num(data.bmi),
+    recordedBy: str(data.recordedById) ?? doc.authorId ?? '—',
+  };
+}
+
+function toLabReport(doc: MedicalRecordDoc): LabReport {
+  const data = doc.data ?? {};
+  return {
+    id: doc._id,
+    testName: str(data.testName) ?? 'Lab test',
+    testCode: str(data.testCode),
+    result: formatLabResult(data.results),
+    referenceRange: str(data.normalRange),
+    unit: str(data.unit),
+    status: str(data.status) ?? 'COMPLETED',
+    orderedAt: doc.createdAt ?? '',
+    resultAt: str(data.reportDate),
+    orderedBy: str(data.orderedById) ?? doc.authorId ?? '—',
+    notes: str(data.notes),
+  };
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
-function SeverityBadge({ severity }: { severity: string }) {
+function SeverityBadge({ severity }: { severity: string | null | undefined }) {
   const variants: Record<string, 'destructive' | 'warning' | 'info' | 'gray'> =
     {
       CRITICAL: 'destructive',
@@ -218,14 +336,14 @@ function SeverityBadge({ severity }: { severity: string }) {
       LOW: 'info',
       MILD: 'info',
     };
+  const label = (severity ?? '').trim();
+  if (!label || label.toUpperCase() === 'UNKNOWN') return null;
   return (
-    <Badge variant={variants[severity.toUpperCase()] ?? 'gray'}>
-      {severity}
-    </Badge>
+    <Badge variant={variants[label.toUpperCase()] ?? 'gray'}>{label}</Badge>
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status }: { status: string | null | undefined }) {
   const variants: Record<string, 'success' | 'warning' | 'gray' | 'info'> = {
     ACTIVE: 'success',
     RESOLVED: 'gray',
@@ -234,9 +352,10 @@ function StatusBadge({ status }: { status: string }) {
     PENDING: 'warning',
     VERIFIED: 'success',
   };
+  const label = (status ?? '').trim();
   return (
-    <Badge variant={variants[status.toUpperCase()] ?? 'gray'} dot>
-      {status}
+    <Badge variant={variants[label.toUpperCase()] ?? 'gray'} dot>
+      {label || '—'}
     </Badge>
   );
 }
@@ -1088,8 +1207,10 @@ export default function PatientProfilePage() {
   const { data: diagnoses } = useQuery({
     queryKey: ['patient', id, 'diagnoses'],
     queryFn: async () => {
-      const res = await apiClient.get<Diagnosis[]>(`/patients/${id}/diagnoses`);
-      return res.data;
+      const res = await apiClient.get<MedicalRecordDoc[]>(
+        `/patients/${id}/diagnoses`,
+      );
+      return (res.data ?? []).map(toDiagnosis);
     },
     enabled: !!patient,
   });
@@ -1098,10 +1219,10 @@ export default function PatientProfilePage() {
   const { data: prescriptions } = useQuery({
     queryKey: ['patient', id, 'prescriptions'],
     queryFn: async () => {
-      const res = await apiClient.get<Prescription[]>(
+      const res = await apiClient.get<MedicalRecordDoc[]>(
         `/patients/${id}/prescriptions`,
       );
-      return res.data;
+      return (res.data ?? []).map(toPrescription);
     },
     enabled: !!patient,
   });
@@ -1110,8 +1231,10 @@ export default function PatientProfilePage() {
   const { data: vitals } = useQuery({
     queryKey: ['patient', id, 'vitals'],
     queryFn: async () => {
-      const res = await apiClient.get<Vital[]>(`/patients/${id}/vitals`);
-      return res.data;
+      const res = await apiClient.get<MedicalRecordDoc[]>(
+        `/patients/${id}/vitals`,
+      );
+      return (res.data ?? []).map(toVital);
     },
     enabled: !!patient,
   });
@@ -1120,10 +1243,10 @@ export default function PatientProfilePage() {
   const { data: labs } = useQuery({
     queryKey: ['patient', id, 'labs'],
     queryFn: async () => {
-      const res = await apiClient.get<LabReport[]>(
+      const res = await apiClient.get<MedicalRecordDoc[]>(
         `/patients/${id}/lab-reports`,
       );
-      return res.data;
+      return (res.data ?? []).map(toLabReport);
     },
     enabled: !!patient,
   });
