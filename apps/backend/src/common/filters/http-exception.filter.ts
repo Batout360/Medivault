@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 
 interface ErrorResponse {
   success: false;
@@ -50,14 +51,36 @@ export class HttpExceptionFilter implements ExceptionFilter {
         code: this.statusToCode(status),
       };
     }
-    // MySQL duplicate entry (TypeORM surfaces this as a raw error)
-    if ((exception as any)?.code === 'ER_DUP_ENTRY') {
+
+    // MongoDB schema validation failure — a bad payload, not a server fault.
+    if (exception instanceof mongoose.Error.ValidationError) {
+      const details = Object.values(exception.errors).map((e) => e.message);
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        message: details.length ? details.join('; ') : 'Validation failed.',
+        code: 'BAD_REQUEST',
+      };
+    }
+
+    // A value could not be cast to the schema type (e.g. a malformed UUID).
+    if (exception instanceof mongoose.Error.CastError) {
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        message: `Invalid value for "${exception.path}".`,
+        code: 'BAD_REQUEST',
+      };
+    }
+
+    // Unique index violation (MongoDB 11000 / legacy MySQL ER_DUP_ENTRY).
+    const dbCode = (exception as any)?.code;
+    if (dbCode === 11000 || dbCode === 'ER_DUP_ENTRY') {
       return {
         status: HttpStatus.CONFLICT,
         message: 'A resource with that value already exists.',
         code: 'CONFLICT',
       };
     }
+
     return {
       status: HttpStatus.INTERNAL_SERVER_ERROR,
       message: 'An unexpected error occurred. Please try again later.',

@@ -44,8 +44,12 @@ export class MedicalRecord {
   @Prop({ type: String, required: true })
   authorId!: string;
 
-  @Prop({ type: String, required: true, index: true })
-  organizationId!: string;
+  // Nullable: records for patients that are not yet assigned to an organisation
+  // (e.g. self-registered accounts) legitimately have no owning organisation,
+  // and platform-level actors such as SUPER_ADMIN carry no organisation of
+  // their own. Matches Patient.organizationId.
+  @Prop({ type: String, default: null, index: true })
+  organizationId!: string | null;
 
   @Prop({ type: String, default: null })
   facilityId!: string | null;

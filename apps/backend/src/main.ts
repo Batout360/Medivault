@@ -10,9 +10,12 @@ import compression from 'compression';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
+  // NOTE: `bufferLogs` is intentionally NOT used here. Nest only flushes the
+  // buffer once `app.useLogger()` is called, so enabling it without a custom
+  // logger silently swallows every log line — including the 500 stack traces
+  // that make production failures diagnosable.
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
-    bufferLogs: true,
+    logger: ['error', 'warn', 'log'],
   });
 
   const configService = app.get(ConfigService);

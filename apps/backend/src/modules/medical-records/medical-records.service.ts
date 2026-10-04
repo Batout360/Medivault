@@ -26,7 +26,7 @@ export interface RequestContext {
 export interface RequestingUser {
   id: string;
   role: string;
-  organizationId: string;
+  organizationId: string | null;
   facilityId?: string;
 }
 
@@ -44,15 +44,15 @@ export class MedicalRecordsService {
 
   /**
    * Patients store `organizationId: null` when unassigned (e.g. self-registered
-   * accounts), while authenticated users arrive here with a non-nullable orgId
-   * (`user.organizationId ?? ''`). Normalise empty-string back to null so the
-   * two representations match when scoping a patient lookup.
+   * accounts) and medical records may legitimately have no owning organisation.
+   * Normalise any empty-string legacy value back to null so the two
+   * representations match when scoping a patient lookup.
    */
-  private orgIdForPatientLookup(orgId: string): string | null {
+  private orgIdForPatientLookup(orgId: string | null): string | null {
     return orgId || null;
   }
 
-  private async verifyPatientInOrg(patientId: string, orgId: string): Promise<void> {
+  private async verifyPatientInOrg(patientId: string, orgId: string | null): Promise<void> {
     // Lightweight existence + org-scope check — avoids loading the full patient document.
     // Patients use UUID string _ids (see Patient schema), so type the raw collection accordingly.
     const exists = await this.medicalRecordModel.db
@@ -66,10 +66,37 @@ export class MedicalRecordsService {
     if (!exists) throw new NotFoundException(`Patient ${patientId} not found in organisation.`);
   }
 
+  /**
+   * Resolves the organisation that owns a patient's medical records.
+   *
+   * Tenant-scoped actors carry an `organizationId` of their own and must always
+   * be scoped to it. Platform-level actors (SUPER_ADMIN) have none, so their
+   * reads/writes inherit the patient's organisation instead — otherwise the
+   * records they create would be invisible to the very tenant that owns the
+   * patient, and a nullable organisation field would be written where a real
+   * one is known.
+   *
+   * Doubles as an existence check so callers get a 404 instead of a write that
+   * silently targets a non-existent patient.
+   */
+  async resolveOrgId(patientId: string, requesterOrgId: string | null): Promise<string | null> {
+    if (requesterOrgId) return requesterOrgId;
+
+    const patient = await this.medicalRecordModel.db
+      .collection<{ _id: string; organizationId: string | null; deletedAt: Date | null }>(
+        'patients',
+      )
+      .findOne({ _id: patientId, deletedAt: null }, { projection: { organizationId: 1 } });
+
+    if (!patient) throw new NotFoundException(`Patient ${patientId} not found.`);
+
+    return patient.organizationId ?? null;
+  }
+
   private async verifyEncounterOwnership(
     encounterId: string,
     patientId: string,
-    orgId: string,
+    orgId: string | null,
   ): Promise<MedicalRecordDocument> {
     const record = await this.medicalRecordModel.findOne({
       _id: encounterId,
@@ -88,7 +115,7 @@ export class MedicalRecordsService {
     patientId: string,
     dto: CreateEncounterDto,
     doctorId: string,
-    orgId: string,
+    orgId: string | null,
     ctx: RequestContext,
   ): Promise<any> {
     const id = uuidv4();
@@ -146,7 +173,7 @@ export class MedicalRecordsService {
 
   async getEncounters(
     patientId: string,
-    orgId: string,
+    orgId: string | null,
     query: PaginationDto,
     requestingUser: RequestingUser,
   ): Promise<PaginatedResult<any>> {
@@ -184,7 +211,7 @@ export class MedicalRecordsService {
   async getEncounterById(
     encounterId: string,
     patientId: string,
-    orgId: string,
+    orgId: string | null,
     requestingUser: RequestingUser,
     ctx: RequestContext,
   ): Promise<any> {
@@ -267,7 +294,7 @@ export class MedicalRecordsService {
     encounterId: string,
     dto: UpdateEncounterDto,
     patientId: string,
-    orgId: string,
+    orgId: string | null,
     requestingUser: RequestingUser,
     ctx: RequestContext,
   ): Promise<any> {
@@ -314,7 +341,7 @@ export class MedicalRecordsService {
     patientId: string,
     dto: CreateDiagnosisDto,
     addedById: string,
-    orgId: string,
+    orgId: string | null,
     ctx: RequestContext,
   ) {
     await this.verifyEncounterOwnership(dto.medicalRecordId, patientId, orgId);
@@ -361,7 +388,7 @@ export class MedicalRecordsService {
     return doc.toObject();
   }
 
-  async getDiagnoses(patientId: string, orgId: string) {
+  async getDiagnoses(patientId: string, orgId: string | null) {
     return this.medicalRecordModel
       .find({ patientId, organizationId: orgId, type: 'diagnosis', deletedAt: null })
       .sort({ 'data.diagnosedAt': -1 })
@@ -371,7 +398,12 @@ export class MedicalRecordsService {
 
   // ── Vitals ─────────────────────────────────────────────────────────────────
 
-  async addVital(patientId: string, dto: CreateVitalDto, recordedById: string, orgId: string) {
+  async addVital(
+    patientId: string,
+    dto: CreateVitalDto,
+    recordedById: string,
+    orgId: string | null,
+  ) {
     let bmi: number | null = null;
     if (dto.weight && dto.height && dto.height > 0) {
       const heightM = dto.height / 100;
@@ -412,7 +444,7 @@ export class MedicalRecordsService {
     return doc.toObject();
   }
 
-  async getVitals(patientId: string, orgId: string, limit = 20) {
+  async getVitals(patientId: string, orgId: string | null, limit = 20) {
     return this.medicalRecordModel
       .find({ patientId, organizationId: orgId, type: 'vital', deletedAt: null })
       .sort({ 'data.recordedAt': -1 })
@@ -427,7 +459,7 @@ export class MedicalRecordsService {
     patientId: string,
     dto: CreateClinicalNoteDto,
     authorId: string,
-    orgId: string,
+    orgId: string | null,
     ctx: RequestContext,
   ) {
     await this.verifyEncounterOwnership(dto.medicalRecordId, patientId, orgId);
@@ -472,7 +504,7 @@ export class MedicalRecordsService {
     return doc.toObject();
   }
 
-  async getClinicalNotes(patientId: string, orgId: string) {
+  async getClinicalNotes(patientId: string, orgId: string | null) {
     return this.medicalRecordModel
       .find({ patientId, organizationId: orgId, type: 'note', deletedAt: null })
       .sort({ createdAt: -1 })
@@ -486,7 +518,7 @@ export class MedicalRecordsService {
     patientId: string,
     dto: CreatePrescriptionDto,
     prescribedById: string,
-    orgId: string,
+    orgId: string | null,
     ctx: RequestContext,
   ) {
     if (dto.medicalRecordId) {
@@ -546,7 +578,7 @@ export class MedicalRecordsService {
     return doc.toObject();
   }
 
-  async getPrescriptions(patientId: string, orgId: string) {
+  async getPrescriptions(patientId: string, orgId: string | null) {
     return this.medicalRecordModel
       .find({ patientId, organizationId: orgId, type: 'prescription', deletedAt: null })
       .sort({ 'data.prescribedAt': -1 })
@@ -560,7 +592,7 @@ export class MedicalRecordsService {
     patientId: string,
     dto: CreateLabReportDto,
     orderedById: string,
-    orgId: string,
+    orgId: string | null,
     ctx: RequestContext,
   ) {
     if (dto.medicalRecordId) {
@@ -613,7 +645,7 @@ export class MedicalRecordsService {
     return doc.toObject();
   }
 
-  async getLabReports(patientId: string, orgId: string) {
+  async getLabReports(patientId: string, orgId: string | null) {
     return this.medicalRecordModel
       .find({ patientId, organizationId: orgId, type: 'lab_report', deletedAt: null })
       .sort({ createdAt: -1 })
@@ -627,7 +659,7 @@ export class MedicalRecordsService {
     patientId: string,
     dto: CreateImagingReportDto,
     orderedById: string,
-    orgId: string,
+    orgId: string | null,
     ctx: RequestContext,
   ) {
     if (dto.medicalRecordId) {
@@ -677,7 +709,7 @@ export class MedicalRecordsService {
     return doc.toObject();
   }
 
-  async getImagingReports(patientId: string, orgId: string) {
+  async getImagingReports(patientId: string, orgId: string | null) {
     return this.medicalRecordModel
       .find({ patientId, organizationId: orgId, type: 'imaging', deletedAt: null })
       .sort({ createdAt: -1 })
@@ -691,7 +723,7 @@ export class MedicalRecordsService {
     patientId: string,
     dto: CreateVaccinationDto,
     administeredById: string,
-    orgId: string,
+    orgId: string | null,
   ) {
     const id = uuidv4();
     const now = new Date();
@@ -725,7 +757,7 @@ export class MedicalRecordsService {
     return doc.toObject();
   }
 
-  async getVaccinations(patientId: string, orgId: string) {
+  async getVaccinations(patientId: string, orgId: string | null) {
     return this.medicalRecordModel
       .find({ patientId, organizationId: orgId, type: 'vaccination', deletedAt: null })
       .sort({ 'data.administeredAt': -1 })
@@ -739,7 +771,7 @@ export class MedicalRecordsService {
     patientId: string,
     dto: CreateProcedureDto,
     performedById: string,
-    orgId: string,
+    orgId: string | null,
     ctx: RequestContext,
   ) {
     if (dto.medicalRecordId) {
@@ -788,7 +820,7 @@ export class MedicalRecordsService {
     return doc.toObject();
   }
 
-  async getProcedures(patientId: string, orgId: string) {
+  async getProcedures(patientId: string, orgId: string | null) {
     return this.medicalRecordModel
       .find({ patientId, organizationId: orgId, type: 'procedure', deletedAt: null })
       .sort({ 'data.performedAt': -1 })
@@ -800,7 +832,7 @@ export class MedicalRecordsService {
 
   async getFullMedicalHistory(
     patientId: string,
-    orgId: string,
+    orgId: string | null,
     requestingUser: RequestingUser,
     ctx: RequestContext,
   ) {
@@ -899,7 +931,11 @@ export class MedicalRecordsService {
    * must NOT see the full clinical detail (patients, billing, etc.).
    * Confidential encounters/notes are always excluded.
    */
-  async getPatientMedicalSummary(patientId: string, orgId: string, requestingUser: RequestingUser) {
+  async getPatientMedicalSummary(
+    patientId: string,
+    orgId: string | null,
+    requestingUser: RequestingUser,
+  ) {
     await this.verifyPatientInOrg(patientId, orgId);
 
     const isClinicalRole = [

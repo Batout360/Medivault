@@ -47,11 +47,22 @@ export class MedicalRecordsController {
     };
   }
 
-  private reqUser(user: AccessTokenPayload): RequestingUser {
+  /**
+   * Effective organisation for a patient's records.
+   *
+   * Never fall back to an empty string: `MedicalRecord.organizationId` is a
+   * nullable field, and SUPER_ADMIN tokens legitimately carry no organisation.
+   * The service resolves those to the patient's own organisation.
+   */
+  private async orgIdFor(user: AccessTokenPayload, patientId: string): Promise<string | null> {
+    return this.medicalRecordsService.resolveOrgId(patientId, user.organizationId ?? null);
+  }
+
+  private async reqUser(user: AccessTokenPayload, patientId: string): Promise<RequestingUser> {
     return {
       id: user.sub,
       role: user.role,
-      organizationId: user.organizationId ?? '',
+      organizationId: await this.orgIdFor(user, patientId),
       facilityId: user.facilityId ?? undefined,
     };
   }
@@ -60,6 +71,7 @@ export class MedicalRecordsController {
 
   @Post('encounters')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.FACILITY_ADMIN, UserRole.DOCTOR)
+  @UseGuards(PatientAccessGuard)
   @ApiOperation({ summary: 'Create a new encounter / medical record' })
   async createEncounter(
     @Param('patientId', ParseUUIDPipe) patientId: string,
@@ -71,7 +83,7 @@ export class MedicalRecordsController {
       patientId,
       dto,
       user.sub,
-      user.organizationId ?? '',
+      await this.orgIdFor(user, patientId),
       this.ctx(req),
     );
   }
@@ -94,9 +106,9 @@ export class MedicalRecordsController {
   ) {
     return this.medicalRecordsService.getEncounters(
       patientId,
-      user.organizationId ?? '',
+      await this.orgIdFor(user, patientId),
       query,
-      this.reqUser(user),
+      await this.reqUser(user, patientId),
     );
   }
 
@@ -120,14 +132,15 @@ export class MedicalRecordsController {
     return this.medicalRecordsService.getEncounterById(
       encounterId,
       patientId,
-      user.organizationId ?? '',
-      this.reqUser(user),
+      await this.orgIdFor(user, patientId),
+      await this.reqUser(user, patientId),
       this.ctx(req),
     );
   }
 
   @Patch('encounters/:encounterId')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.FACILITY_ADMIN, UserRole.DOCTOR)
+  @UseGuards(PatientAccessGuard)
   @ApiOperation({ summary: 'Update an encounter' })
   async updateEncounter(
     @Param('patientId', ParseUUIDPipe) patientId: string,
@@ -140,8 +153,8 @@ export class MedicalRecordsController {
       encounterId,
       dto,
       patientId,
-      user.organizationId ?? '',
-      this.reqUser(user),
+      await this.orgIdFor(user, patientId),
+      await this.reqUser(user, patientId),
       this.ctx(req),
     );
   }
@@ -150,6 +163,7 @@ export class MedicalRecordsController {
 
   @Post('diagnoses')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.FACILITY_ADMIN, UserRole.DOCTOR)
+  @UseGuards(PatientAccessGuard)
   @ApiOperation({ summary: 'Add a diagnosis' })
   async addDiagnosis(
     @Param('patientId', ParseUUIDPipe) patientId: string,
@@ -161,7 +175,7 @@ export class MedicalRecordsController {
       patientId,
       dto,
       user.sub,
-      user.organizationId ?? '',
+      await this.orgIdFor(user, patientId),
       this.ctx(req),
     );
   }
@@ -181,20 +195,26 @@ export class MedicalRecordsController {
     @Param('patientId', ParseUUIDPipe) patientId: string,
     @CurrentUser() user: AccessTokenPayload,
   ) {
-    return this.medicalRecordsService.getDiagnoses(patientId, user.organizationId ?? '');
+    return this.medicalRecordsService.getDiagnoses(patientId, await this.orgIdFor(user, patientId));
   }
 
   // ── Vitals ────────────────────────────────────────────────────────────────
 
   @Post('vitals')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.FACILITY_ADMIN, UserRole.DOCTOR)
+  @UseGuards(PatientAccessGuard)
   @ApiOperation({ summary: 'Record vitals' })
   async addVital(
     @Param('patientId', ParseUUIDPipe) patientId: string,
     @Body() dto: CreateVitalDto,
     @CurrentUser() user: AccessTokenPayload,
   ) {
-    return this.medicalRecordsService.addVital(patientId, dto, user.sub, user.organizationId ?? '');
+    return this.medicalRecordsService.addVital(
+      patientId,
+      dto,
+      user.sub,
+      await this.orgIdFor(user, patientId),
+    );
   }
 
   @Get('vitals')
@@ -212,13 +232,14 @@ export class MedicalRecordsController {
     @Param('patientId', ParseUUIDPipe) patientId: string,
     @CurrentUser() user: AccessTokenPayload,
   ) {
-    return this.medicalRecordsService.getVitals(patientId, user.organizationId ?? '');
+    return this.medicalRecordsService.getVitals(patientId, await this.orgIdFor(user, patientId));
   }
 
   // ── Clinical Notes ────────────────────────────────────────────────────────
 
   @Post('notes')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.FACILITY_ADMIN, UserRole.DOCTOR)
+  @UseGuards(PatientAccessGuard)
   @ApiOperation({ summary: 'Add a clinical note' })
   async addNote(
     @Param('patientId', ParseUUIDPipe) patientId: string,
@@ -230,7 +251,7 @@ export class MedicalRecordsController {
       patientId,
       dto,
       user.sub,
-      user.organizationId ?? '',
+      await this.orgIdFor(user, patientId),
       this.ctx(req),
     );
   }
@@ -250,13 +271,17 @@ export class MedicalRecordsController {
     @Param('patientId', ParseUUIDPipe) patientId: string,
     @CurrentUser() user: AccessTokenPayload,
   ) {
-    return this.medicalRecordsService.getClinicalNotes(patientId, user.organizationId ?? '');
+    return this.medicalRecordsService.getClinicalNotes(
+      patientId,
+      await this.orgIdFor(user, patientId),
+    );
   }
 
   // ── Prescriptions ─────────────────────────────────────────────────────────
 
   @Post('prescriptions')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.FACILITY_ADMIN, UserRole.DOCTOR)
+  @UseGuards(PatientAccessGuard)
   @ApiOperation({ summary: 'Create a prescription' })
   async addPrescription(
     @Param('patientId', ParseUUIDPipe) patientId: string,
@@ -268,7 +293,7 @@ export class MedicalRecordsController {
       patientId,
       dto,
       user.sub,
-      user.organizationId ?? '',
+      await this.orgIdFor(user, patientId),
       this.ctx(req),
     );
   }
@@ -289,13 +314,17 @@ export class MedicalRecordsController {
     @Param('patientId', ParseUUIDPipe) patientId: string,
     @CurrentUser() user: AccessTokenPayload,
   ) {
-    return this.medicalRecordsService.getPrescriptions(patientId, user.organizationId ?? '');
+    return this.medicalRecordsService.getPrescriptions(
+      patientId,
+      await this.orgIdFor(user, patientId),
+    );
   }
 
   // ── Lab Reports ───────────────────────────────────────────────────────────
 
   @Post('lab-reports')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.FACILITY_ADMIN, UserRole.DOCTOR)
+  @UseGuards(PatientAccessGuard)
   @ApiOperation({ summary: 'Add a lab report' })
   async addLabReport(
     @Param('patientId', ParseUUIDPipe) patientId: string,
@@ -307,7 +336,7 @@ export class MedicalRecordsController {
       patientId,
       dto,
       user.sub,
-      user.organizationId ?? '',
+      await this.orgIdFor(user, patientId),
       this.ctx(req),
     );
   }
@@ -328,13 +357,17 @@ export class MedicalRecordsController {
     @Param('patientId', ParseUUIDPipe) patientId: string,
     @CurrentUser() user: AccessTokenPayload,
   ) {
-    return this.medicalRecordsService.getLabReports(patientId, user.organizationId ?? '');
+    return this.medicalRecordsService.getLabReports(
+      patientId,
+      await this.orgIdFor(user, patientId),
+    );
   }
 
   // ── Imaging ───────────────────────────────────────────────────────────────
 
   @Post('imaging')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.FACILITY_ADMIN, UserRole.DOCTOR)
+  @UseGuards(PatientAccessGuard)
   @ApiOperation({ summary: 'Add an imaging report' })
   async addImaging(
     @Param('patientId', ParseUUIDPipe) patientId: string,
@@ -346,7 +379,7 @@ export class MedicalRecordsController {
       patientId,
       dto,
       user.sub,
-      user.organizationId ?? '',
+      await this.orgIdFor(user, patientId),
       this.ctx(req),
     );
   }
@@ -367,13 +400,17 @@ export class MedicalRecordsController {
     @Param('patientId', ParseUUIDPipe) patientId: string,
     @CurrentUser() user: AccessTokenPayload,
   ) {
-    return this.medicalRecordsService.getImagingReports(patientId, user.organizationId ?? '');
+    return this.medicalRecordsService.getImagingReports(
+      patientId,
+      await this.orgIdFor(user, patientId),
+    );
   }
 
   // ── Vaccinations ──────────────────────────────────────────────────────────
 
   @Post('vaccinations')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.FACILITY_ADMIN, UserRole.DOCTOR)
+  @UseGuards(PatientAccessGuard)
   @ApiOperation({ summary: 'Record a vaccination' })
   async addVaccination(
     @Param('patientId', ParseUUIDPipe) patientId: string,
@@ -384,7 +421,7 @@ export class MedicalRecordsController {
       patientId,
       dto,
       user.sub,
-      user.organizationId ?? '',
+      await this.orgIdFor(user, patientId),
     );
   }
 
@@ -403,13 +440,17 @@ export class MedicalRecordsController {
     @Param('patientId', ParseUUIDPipe) patientId: string,
     @CurrentUser() user: AccessTokenPayload,
   ) {
-    return this.medicalRecordsService.getVaccinations(patientId, user.organizationId ?? '');
+    return this.medicalRecordsService.getVaccinations(
+      patientId,
+      await this.orgIdFor(user, patientId),
+    );
   }
 
   // ── Procedures ────────────────────────────────────────────────────────────
 
   @Post('procedures')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.FACILITY_ADMIN, UserRole.DOCTOR)
+  @UseGuards(PatientAccessGuard)
   @ApiOperation({ summary: 'Record a procedure' })
   async addProcedure(
     @Param('patientId', ParseUUIDPipe) patientId: string,
@@ -421,7 +462,7 @@ export class MedicalRecordsController {
       patientId,
       dto,
       user.sub,
-      user.organizationId ?? '',
+      await this.orgIdFor(user, patientId),
       this.ctx(req),
     );
   }
@@ -441,7 +482,10 @@ export class MedicalRecordsController {
     @Param('patientId', ParseUUIDPipe) patientId: string,
     @CurrentUser() user: AccessTokenPayload,
   ) {
-    return this.medicalRecordsService.getProcedures(patientId, user.organizationId ?? '');
+    return this.medicalRecordsService.getProcedures(
+      patientId,
+      await this.orgIdFor(user, patientId),
+    );
   }
 
   // ── Full Medical History ──────────────────────────────────────────────────
@@ -464,8 +508,8 @@ export class MedicalRecordsController {
   ) {
     return this.medicalRecordsService.getFullMedicalHistory(
       patientId,
-      user.organizationId ?? '',
-      this.reqUser(user),
+      await this.orgIdFor(user, patientId),
+      await this.reqUser(user, patientId),
       this.ctx(req),
     );
   }
@@ -501,8 +545,8 @@ export class MedicalRecordsController {
   ) {
     return this.medicalRecordsService.getPatientMedicalSummary(
       patientId,
-      user.organizationId ?? '',
-      this.reqUser(user),
+      await this.orgIdFor(user, patientId),
+      await this.reqUser(user, patientId),
     );
   }
 }
