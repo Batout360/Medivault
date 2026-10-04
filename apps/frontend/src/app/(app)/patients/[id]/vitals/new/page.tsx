@@ -1,8 +1,7 @@
 'use client';
 
-import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Activity } from 'lucide-react';
@@ -67,14 +66,22 @@ export default function NewVitalsPage() {
   const canWrite = user?.role ? CAN_WRITE_ROLES.has(user.role) : false;
   const createVitals = useCreateVitals(id);
 
+  const nowLocal = new Date();
+  const defaultRecordedAt = new Date(
+    nowLocal.getTime() - nowLocal.getTimezoneOffset() * 60000,
+  )
+    .toISOString()
+    .slice(0, 16);
+
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<VitalFormValues>({
     resolver: zodResolver(vitalSchema),
     defaultValues: {
-      recordedAt: '',
+      recordedAt: defaultRecordedAt,
       bloodPressureSystolic: '',
       bloodPressureDiastolic: '',
       heartRate: '',
@@ -88,18 +95,10 @@ export default function NewVitalsPage() {
     },
   });
 
-  const nowLocal = new Date();
-  const defaultRecordedAt = new Date(
-    nowLocal.getTime() - nowLocal.getTimezoneOffset() * 60000,
-  )
-    .toISOString()
-    .slice(0, 16);
-  const [recordedAt, setRecordedAt] = React.useState(defaultRecordedAt);
-
   const onSubmit = async (values: VitalFormValues) => {
     try {
       await createVitals.mutateAsync({
-        recordedAt: new Date(`${recordedAt}`).toISOString(),
+        recordedAt: new Date(`${values.recordedAt}`).toISOString(),
         bloodPressureSystolic: toNum(values.bloodPressureSystolic),
         bloodPressureDiastolic: toNum(values.bloodPressureDiastolic),
         heartRate: toNum(values.heartRate),
@@ -141,13 +140,22 @@ export default function NewVitalsPage() {
               <CardTitle className="text-base">Observations</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Input
-                label="Recorded Date & Time"
-                type="datetime-local"
-                required
-                value={recordedAt}
-                onChange={(e) => setRecordedAt(e.target.value)}
-                hint="Leave as is to use the current time."
+              <Controller
+                name="recordedAt"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    label="Recorded Date & Time"
+                    type="datetime-local"
+                    required
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    ref={field.ref}
+                    error={errors.recordedAt?.message}
+                    hint="Leave as is to use the current time."
+                  />
+                )}
               />
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Input
