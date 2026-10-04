@@ -1,6 +1,7 @@
 import { IsOptional, IsString, MinLength, IsIn } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
+import { BLOOD_GROUP_FILTER_VALUES } from '../blood-group.util';
 
 export class PatientSearchDto extends PaginationDto {
   @ApiPropertyOptional({ description: 'Search by name, MRN, phone, or email (min 3 chars)' })
@@ -35,10 +36,11 @@ export class PatientSearchDto extends PaginationDto {
   gender?: 'MALE' | 'FEMALE' | 'OTHER';
 
   @ApiPropertyOptional({
-    description: 'Filter by blood group (e.g. A+, O-)',
-    enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
+    description:
+      'Filter by blood group. Accepts either the display symbol ("A+") or the stored enum ("A_POSITIVE").',
+    enum: BLOOD_GROUP_FILTER_VALUES,
   })
   @IsOptional()
-  @IsIn(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'])
+  @IsIn(BLOOD_GROUP_FILTER_VALUES)
   bloodGroup?: string;
 }

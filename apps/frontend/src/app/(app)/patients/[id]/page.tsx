@@ -49,7 +49,12 @@ import {
 import { MedicalProfileCardView } from '@/components/medical-profile-card';
 import { VisibilitySettingsPanel } from '@/components/visibility-settings-panel';
 import { apiClient, normalizeError } from '@/lib/api/client';
-import { cn, formatDate, calculateAge } from '@/lib/utils';
+import {
+  cn,
+  formatDate,
+  calculateAge,
+  formatStaffName,
+} from '@/lib/utils';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import type { MedicalProfileCard as MedicalProfileCardData } from '@/lib/hooks/use-api';
 import { UserRole } from '@medivault/shared';
@@ -774,7 +779,7 @@ function DocumentsTab({
             <option value="">All doctors</option>
             {(uploaders ?? []).map((u) => (
               <option key={u.id} value={u.id}>
-                {u.name}
+                {formatStaffName(u.name, u.role)}
               </option>
             ))}
           </select>
@@ -879,7 +884,10 @@ function DocumentsTab({
                       {doc.sourceHospital ?? '—'}
                     </td>
                     <td className="py-3 px-3 text-muted-foreground">
-                      {doc.uploadedByName ?? '—'}
+                      {formatStaffName(
+                        doc.uploadedByName,
+                        doc.uploadedByRole,
+                      )}
                     </td>
                     <td className="py-3 px-3 text-muted-foreground whitespace-nowrap">
                       {formatDate(doc.documentDate ?? doc.createdAt, 'short')}

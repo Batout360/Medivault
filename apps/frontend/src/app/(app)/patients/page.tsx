@@ -14,7 +14,12 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useDebounce } from "@/lib/hooks/use-debounce";
-import { cn, formatDate, calculateAge } from "@/lib/utils";
+import {
+  cn,
+  formatDate,
+  calculateAge,
+  formatBloodGroup,
+} from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
@@ -391,15 +396,20 @@ export default function PatientsPage() {
                           )}
                         </td>
                         <td className="py-3 px-4">
-                          <span
-                            className={cn(
-                              "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold",
-                              bloodGroupColors[patient.bloodGroup] ??
-                                "text-muted-foreground bg-muted",
-                            )}
-                          >
-                            {patient.bloodGroup}
-                          </span>
+                          {(() => {
+                            const bg = formatBloodGroup(patient.bloodGroup);
+                            return (
+                              <span
+                                className={cn(
+                                  "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold",
+                                  bloodGroupColors[bg] ??
+                                    "text-muted-foreground bg-muted",
+                                )}
+                              >
+                                {bg}
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td className="py-3 px-4 text-sm text-muted-foreground">
                           {patient.lastVisitAt
@@ -452,7 +462,7 @@ export default function PatientsPage() {
                       <p className="text-xs text-muted-foreground">
                         {patient.profileId} ·{" "}
                         {calculateAge(patient.dateOfBirth)} ·{" "}
-                        {patient.bloodGroup}
+                        {formatBloodGroup(patient.bloodGroup)}
                       </p>
                     </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />

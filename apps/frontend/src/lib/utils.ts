@@ -84,3 +84,55 @@ export function truncate(str: string, max = 50): string {
   if (str.length <= max) return str;
   return str.slice(0, max - 1) + '…';
 }
+
+const CLINICAL_PREFIXES: Record<string, string> = {
+  DOCTOR: 'Dr.',
+  RADIOLOGIST: 'Dr.',
+  PHARMACIST: 'Mr.',
+  NURSE: 'Sr.',
+  LAB_TECHNICIAN: 'Mr.',
+};
+
+/**
+ * Render a staff member's display name with a role-appropriate title prefix,
+ * e.g. "Dr. Anita Sharma". Avoids double-prefixing names that already carry one.
+ */
+export function formatStaffName(
+  name: string | null | undefined,
+  role?: string | null,
+): string {
+  const clean = (name ?? '').trim().replace(/\s+/g, ' ');
+  if (!clean) return '—';
+
+  const prefix = role ? CLINICAL_PREFIXES[role.toUpperCase()] : undefined;
+  if (!prefix) return clean;
+  return clean.toLowerCase().startsWith(`${prefix.toLowerCase()} `)
+    ? clean
+    : `${prefix} ${clean}`;
+}
+
+const BLOOD_GROUP_SYMBOL_TO_ENUM: Record<string, string> = {
+  'A+': 'A_POSITIVE',
+  'A-': 'A_NEGATIVE',
+  'B+': 'B_POSITIVE',
+  'B-': 'B_NEGATIVE',
+  'AB+': 'AB_POSITIVE',
+  'AB-': 'AB_NEGATIVE',
+  'O+': 'O_POSITIVE',
+  'O-': 'O_NEGATIVE',
+};
+
+/**
+ * Render a stored blood group as its display symbol. The API returns the enum
+ * ("A_POSITIVE") but older self-registered rows hold the symbol ("A-"), so
+ * normalise both. Mirrors the backend blood-group.util.ts.
+ */
+export function formatBloodGroup(value: string | null | undefined): string {
+  const key = (value ?? '').trim().toUpperCase();
+  if (!key) return '—';
+  if (BLOOD_GROUP_SYMBOL_TO_ENUM[key]) return key;
+  const symbol = Object.entries(BLOOD_GROUP_SYMBOL_TO_ENUM).find(
+    ([, enumValue]) => enumValue === key,
+  )?.[0];
+  return symbol ?? key;
+}

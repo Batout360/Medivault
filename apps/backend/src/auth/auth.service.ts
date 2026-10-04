@@ -16,6 +16,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { AuditLogsService } from '../modules/audit-logs/audit-logs.service';
 import { MedicalProfileService } from '../modules/medical-profile/medical-profile.service';
 import { PatientIdService } from '../modules/patients/patient-id.service';
+import { normalizeBloodGroup } from '../modules/patients/blood-group.util';
 import { Patient, PatientDocument } from '../modules/patients/schemas/patient.schema';
 import * as argon2 from 'argon2';
 import * as speakeasy from 'speakeasy';
@@ -501,7 +502,7 @@ export class AuthService {
       middleName: null,
       dateOfBirth: i.dateOfBirth ? new Date(i.dateOfBirth) : now,
       gender: i.gender ?? 'PREFER_NOT_TO_SAY',
-      bloodGroup: i.bloodGroup ?? null,
+      bloodGroup: normalizeBloodGroup(i.bloodGroup),
       phoneNumber: account.phone ?? null,
       email: account.email.toLowerCase().trim(),
       address:

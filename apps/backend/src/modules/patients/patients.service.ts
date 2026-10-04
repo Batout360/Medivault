@@ -24,6 +24,7 @@ import { Session, SessionDocument } from '../users/schemas/session.schema';
 import { UserRole, PATIENT_ROLES } from '@medivault/shared';
 import { AccessTokenPayload } from '../../auth/auth.service';
 import { PatientIdService } from './patient-id.service';
+import { bloodGroupAliases, normalizeBloodGroup } from './blood-group.util';
 
 /** Argon2id options — mirror the Users service so hashes are comparable. */
 const ARGON2_OPTIONS: argon2.HashOptions = {
@@ -364,7 +365,7 @@ export class PatientsService {
       middleName: dto.middleName ?? null,
       dateOfBirth: new Date(dto.dateOfBirth),
       gender: dto.gender,
-      bloodGroup: dto.bloodGroup ?? null,
+      bloodGroup: normalizeBloodGroup(dto.bloodGroup),
       phoneNumber: dto.phone,
       email: dto.email ?? null,
       address: dto.address ?? null,
@@ -610,20 +611,27 @@ export class PatientsService {
     }
 
     if (query.gender) filter['gender'] = query.gender;
+
+    if (query.q) {
+      // Escape all regex special characters before using user input in a RegExp
+      // to prevent ReDoS (Regular Expression Denial of Service) attacks.
+      const escaped = query.q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(escaped, 'i');
+      filter['$or'] = [
+        { firstName: regex },
+        { lastName: regex },
+        { mrn: regex },
+        { profileId: regex },
+        { phoneNumber: regex },
+        { email: regex },
+      ];
+    }
+
     if (query.bloodGroup) {
-      // The query param arrives as display format (e.g. "A+") from the frontend
-      // filter UI, but the DB stores the enum string (e.g. "A_POSITIVE").
-      const BLOOD_GROUP_DISPLAY_TO_DB: Record<string, string> = {
-        'A+': 'A_POSITIVE',
-        'A-': 'A_NEGATIVE',
-        'B+': 'B_POSITIVE',
-        'B-': 'B_NEGATIVE',
-        'AB+': 'AB_POSITIVE',
-        'AB-': 'AB_NEGATIVE',
-        'O+': 'O_POSITIVE',
-        'O-': 'O_NEGATIVE',
-      };
-      filter['bloodGroup'] = BLOOD_GROUP_DISPLAY_TO_DB[query.bloodGroup] ?? query.bloodGroup;
+      // The UI sends the display symbol ("A+") but older rows may hold either
+      // spelling, so match every alias rather than a single value.
+      const aliases = bloodGroupAliases(query.bloodGroup);
+      filter['bloodGroup'] = aliases ? { $in: aliases } : query.bloodGroup;
     }
 
     // Map sortable column names to patient fields (default: newest first).
@@ -911,7 +919,9 @@ export class PatientsService {
     if (dto.middleName !== undefined) updateFields['middleName'] = dto.middleName;
     if (dto.phone !== undefined) updateFields['phoneNumber'] = dto.phone;
     if (dto.email !== undefined) updateFields['email'] = dto.email;
-    if (dto.bloodGroup !== undefined) updateFields['bloodGroup'] = dto.bloodGroup;
+    if (dto.bloodGroup !== undefined) {
+      updateFields['bloodGroup'] = normalizeBloodGroup(dto.bloodGroup);
+    }
     if (dto.address !== undefined) updateFields['address'] = dto.address;
     if (dto.dateOfBirth !== undefined) updateFields['dateOfBirth'] = new Date(dto.dateOfBirth);
     if (dto.gender !== undefined) updateFields['gender'] = dto.gender;

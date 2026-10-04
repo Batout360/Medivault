@@ -42,7 +42,7 @@ import {
 } from '@/components/ui/modal';
 import { SkeletonTable } from '@/components/ui/skeleton';
 import { apiClient, isApiError, normalizeError } from '@/lib/api/client';
-import { cn } from '@/lib/utils';
+import { cn, formatStaffName } from '@/lib/utils';
 import { useAuthStore } from '@/lib/stores/auth.store';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -550,7 +550,7 @@ export default function AdminDocumentsPage() {
                   <SelectItem value="">All uploaders</SelectItem>
                   {(uploaders ?? []).map((u) => (
                     <SelectItem key={u.id} value={u.id}>
-                      {u.name}
+                      {formatStaffName(u.name, u.role)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -695,7 +695,12 @@ export default function AdminDocumentsPage() {
                           </Badge>
                         </td>
                         <td className="py-3 px-4 hidden xl:table-cell">
-                          <p className="text-xs">{doc.uploadedByName ?? '—'}</p>
+                          <p className="text-xs">
+                            {formatStaffName(
+                              doc.uploadedByName,
+                              doc.uploadedByRole,
+                            )}
+                          </p>
                           {doc.uploadedByRole && (
                             <p className="text-xs text-muted-foreground capitalize">
                               {doc.uploadedByRole.toLowerCase().replace('_', ' ')}
