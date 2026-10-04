@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   ChevronRight,
   Droplet,
+  ExternalLink,
   EyeOff,
   HeartPulse,
   LogIn,
@@ -28,12 +29,29 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { formatDate } from '@/lib/utils';
+import { UserRole } from '@medivault/shared';
 import type { MedicalProfileCard, PublicProfileResult } from '@/lib/hooks/use-api';
 
 interface VerifyDetails {
   patientId: string;
   card: MedicalProfileCard;
 }
+
+/**
+ * Roles that treat a scanned card as a doorway into the live chart. Clinical
+ * staff and admins can open the full record; patients, auditors and front-of-house
+ * roles deliberately stay on the read-only card view.
+ */
+const CARE_TEAM_ROLES = new Set<string>([
+  UserRole.DOCTOR,
+  UserRole.NURSE,
+  UserRole.PHARMACIST,
+  UserRole.LAB_TECHNICIAN,
+  UserRole.RADIOLOGIST,
+  UserRole.ORG_ADMIN,
+  UserRole.FACILITY_ADMIN,
+  UserRole.SUPER_ADMIN,
+]);
 
 // ─── Severity badge ───────────────────────────────────────────────────────────
 function SeverityBadge({ severity }: { severity: string | null }) {
@@ -239,6 +257,7 @@ function PublicProfileView({ data }: { data: PublicProfileResult }) {
 export default function VerifyPage() {
   const { token } = useParams<{ token: string }>();
   const isAuthenticated = useAuthStore((s) => !!s.accessToken);
+  const role = useAuthStore((s) => s.user?.role);
   const [showEmergency, setShowEmergency] = React.useState(false);
 
   // 1. Public profile (visibility-filtered)
@@ -267,6 +286,11 @@ export default function VerifyPage() {
 
   const loading = publicQuery.isLoading;
   const data = publicQuery.data;
+
+  // The live chart link is only offered once the details call has confirmed the
+  // signed-in user may actually open this patient's record.
+  const patientId = detailsQuery.data?.patientId;
+  const canOpenChart = !!patientId && !!role && CARE_TEAM_ROLES.has(role);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-zinc-950 dark:to-zinc-900">
@@ -344,9 +368,19 @@ export default function VerifyPage() {
         {/* Authenticated staff view */}
         {canViewDetails && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <EyeOff className="h-3.5 w-3.5" />
-              <span>Full profile — visible only to signed-in care team</span>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <EyeOff className="h-3.5 w-3.5" />
+                <span>Full profile — visible only to signed-in care team</span>
+              </div>
+              {canOpenChart && (
+                <Button size="sm" asChild>
+                  <Link href={`/patients/${patientId}`}>
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Open full chart in Medivault
+                  </Link>
+                </Button>
+              )}
             </div>
             {detailsQuery.isLoading ? (
               <SkeletonCard />
