@@ -227,12 +227,25 @@ interface MedicalRecordDoc {
   _id: string;
   type?: string;
   authorId?: string | null;
+  /** Display identity of the authoring clinician, resolved server-side. */
+  authorName?: string | null;
+  authorRole?: string | null;
+  authorLabel?: string;
   createdAt?: string;
   data?: Record<string, unknown> | null;
 }
 
 function str(value: unknown): string | null {
   return typeof value === 'string' && value.trim() !== '' ? value : null;
+}
+
+/**
+ * Name of the clinician who authored a record, prefixed with their title
+ * ("Dr. Anita Sharma"). The API resolves the id to a name; falls back to "—"
+ * when the authoring account has been removed.
+ */
+function authorName(doc: MedicalRecordDoc): string {
+  return formatStaffName(doc.authorName, doc.authorRole);
 }
 
 function num(value: unknown): number | null {
@@ -275,7 +288,7 @@ function toDiagnosis(doc: MedicalRecordDoc): Diagnosis {
     severity: str(data.severity) ?? 'UNKNOWN',
     status: str(data.status) ?? 'ACTIVE',
     diagnosedAt: str(data.diagnosedAt) ?? doc.createdAt ?? '',
-    diagnosedBy: doc.authorId ?? '—',
+    diagnosedBy: authorName(doc),
     resolvedAt: null,
   };
 }
@@ -291,7 +304,7 @@ function toPrescription(doc: MedicalRecordDoc): Prescription {
     startDate: str(data.prescribedAt) ?? doc.createdAt ?? '',
     endDate: str(data.expiresAt),
     instructions: str(data.instructions),
-    prescribedBy: str(data.prescribedById) ?? doc.authorId ?? '—',
+    prescribedBy: authorName(doc),
     status: data.isActive === false ? 'INACTIVE' : 'ACTIVE',
   };
 }
@@ -310,7 +323,7 @@ function toVital(doc: MedicalRecordDoc): Vital {
     weight: num(data.weight),
     height: num(data.height),
     bmi: num(data.bmi),
-    recordedBy: str(data.recordedById) ?? doc.authorId ?? '—',
+    recordedBy: authorName(doc),
   };
 }
 
@@ -326,7 +339,7 @@ function toLabReport(doc: MedicalRecordDoc): LabReport {
     status: str(data.status) ?? 'COMPLETED',
     orderedAt: doc.createdAt ?? '',
     resultAt: str(data.reportDate),
-    orderedBy: str(data.orderedById) ?? doc.authorId ?? '—',
+    orderedBy: authorName(doc),
     notes: str(data.notes),
   };
 }
@@ -1527,6 +1540,9 @@ export default function PatientProfilePage() {
                         >
                           {rx.medicationName}
                           {rx.dosage ? ` — ${rx.dosage}` : ''}
+                          {rx.prescribedBy !== '—'
+                            ? ` · ${rx.prescribedBy}`
+                            : ''}
                         </li>
                       ))}
                   </ul>
@@ -1737,11 +1753,11 @@ export default function PatientProfilePage() {
                           </p>
                         )}
                         <p className="text-xs text-muted-foreground mt-2">
-                          From {formatDate(rx.startDate, 'short')}
+                          Prescribed by {rx.prescribedBy} · from{' '}
+                          {formatDate(rx.startDate, 'short')}
                           {rx.endDate
                             ? ` to ${formatDate(rx.endDate, 'short')}`
                             : ''}
-                          {' · '} by {rx.prescribedBy}
                         </p>
                       </div>
                       <StatusBadge status={rx.status} />
@@ -1832,6 +1848,9 @@ export default function PatientProfilePage() {
                             {lab.testCode}
                           </p>
                         )}
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Ordered by {lab.orderedBy}
+                        </p>
                       </td>
                       <td className="py-3 px-3">
                         {lab.result ? (

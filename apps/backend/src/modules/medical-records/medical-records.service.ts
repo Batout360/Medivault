@@ -6,6 +6,7 @@ import { PATIENT_ROLES } from '@medivault/shared';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { paginate, PaginationDto, PaginatedResult } from '../../common/dto/pagination.dto';
 import { MedicalRecord, MedicalRecordDocument } from './schemas/medical-record.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
 
 import { CreateEncounterDto, UpdateEncounterDto } from './dto/create-encounter.dto';
 import { CreateDiagnosisDto } from './dto/create-diagnosis.dto';
@@ -30,6 +31,41 @@ export interface RequestingUser {
   facilityId?: string;
 }
 
+/** Display identity attached to every clinical record read. */
+export interface RecordAuthor {
+  name: string | null;
+  role: string | null;
+}
+
+/** Minimal shape needed to resolve a record's authoring clinician. */
+interface LeanRecord {
+  type?: string;
+  authorId?: string | null;
+  data?: Record<string, unknown>;
+}
+
+/** Type-specific mirrors of `authorId` that some record types also persist. */
+const AUTHOR_ID_FIELDS = [
+  'prescribedById',
+  'diagnosedById',
+  'recordedById',
+  'orderedById',
+  'doctorId',
+];
+
+/** Per-type labels for the clinician who authored a record. */
+const AUTHOR_LABELS: Record<string, string> = {
+  encounter: 'Seen by',
+  diagnosis: 'Diagnosed by',
+  vital: 'Recorded by',
+  note: 'Noted by',
+  prescription: 'Prescribed by',
+  lab_report: 'Ordered by',
+  imaging: 'Reported by',
+  vaccination: 'Administered by',
+  procedure: 'Performed by',
+};
+
 @Injectable()
 export class MedicalRecordsService {
   private readonly logger = new Logger(MedicalRecordsService.name);
@@ -37,10 +73,79 @@ export class MedicalRecordsService {
   constructor(
     @InjectModel(MedicalRecord.name)
     private readonly medicalRecordModel: Model<MedicalRecordDocument>,
+    @InjectModel(User.name)
+    private readonly userModel: Model<UserDocument>,
     private readonly auditLogs: AuditLogsService,
   ) {}
 
   // ── Private helpers ────────────────────────────────────────────────────────
+
+  /**
+   * Attach the authoring clinician's display identity to a page of records.
+   *
+   * Records only persist the clinician's user id (`authorId`, plus a
+   * type-specific mirror such as `data.prescribedById`), so without this the UI
+   * can only render a raw UUID. Leaves `null` when the authoring account has
+   * since been removed so the UI can degrade gracefully.
+   */
+  private async withAuthors<T extends LeanRecord>(records: T[]) {
+    return this.attachAuthors(records, await this.loadAuthors(records));
+  }
+
+  /**
+   * Same as {@link withAuthors} but shares one lookup across several record
+   * collections — `getFullMedicalHistory` returns nine types at once.
+   */
+  private async withAuthorsGrouped<T extends LeanRecord>(groups: Record<string, T[]>) {
+    const all = Object.values(groups).flat();
+    const authors = await this.loadAuthors(all);
+    const out: Record<string, unknown[]> = {};
+    for (const [key, rows] of Object.entries(groups)) {
+      out[key] = this.attachAuthors(rows, authors);
+    }
+    return out as Record<keyof typeof groups, Awaited<ReturnType<typeof this.attachAuthors<T>>>>;
+  }
+
+  /** Collect every distinct clinician id referenced by the given records. */
+  private async loadAuthors(records: LeanRecord[]) {
+    const ids = new Set<string>();
+    for (const record of records) {
+      if (record.authorId) ids.add(record.authorId);
+      for (const key of AUTHOR_ID_FIELDS) {
+        const value = record.data?.[key];
+        if (typeof value === 'string' && value) ids.add(value);
+      }
+    }
+
+    const authors = new Map<string, RecordAuthor>();
+    if (!ids.size) return authors;
+
+    const users = await this.userModel
+      .find({ _id: { $in: [...ids] } })
+      .select('firstName lastName role')
+      .lean()
+      .exec();
+    for (const user of users) {
+      const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+      authors.set(String(user._id), {
+        name: fullName || null,
+        role: (user.role as string) ?? null,
+      });
+    }
+    return authors;
+  }
+
+  private attachAuthors<T extends LeanRecord>(records: T[], authors: Map<string, RecordAuthor>) {
+    return records.map((record) => {
+      const author = record.authorId ? authors.get(record.authorId) : undefined;
+      return {
+        ...record,
+        authorName: author?.name ?? null,
+        authorRole: author?.role ?? null,
+        authorLabel: AUTHOR_LABELS[record.type ?? ''] ?? 'Recorded by',
+      };
+    });
+  }
 
   /**
    * Patients store `organizationId: null` when unassigned (e.g. self-registered
@@ -205,7 +310,7 @@ export class MedicalRecordsService {
       metadata: { patientId },
     });
 
-    return paginate(rows ?? [], total, page, limit);
+    return paginate(await this.withAuthors(rows ?? []), total, page, limit);
   }
 
   async getEncounterById(
@@ -389,11 +494,12 @@ export class MedicalRecordsService {
   }
 
   async getDiagnoses(patientId: string, orgId: string | null) {
-    return this.medicalRecordModel
+    const records = await this.medicalRecordModel
       .find({ patientId, organizationId: orgId, type: 'diagnosis', deletedAt: null })
       .sort({ 'data.diagnosedAt': -1 })
       .lean()
       .exec();
+    return this.withAuthors(records);
   }
 
   // ── Vitals ─────────────────────────────────────────────────────────────────
@@ -445,12 +551,13 @@ export class MedicalRecordsService {
   }
 
   async getVitals(patientId: string, orgId: string | null, limit = 20) {
-    return this.medicalRecordModel
+    const records = await this.medicalRecordModel
       .find({ patientId, organizationId: orgId, type: 'vital', deletedAt: null })
       .sort({ 'data.recordedAt': -1 })
       .limit(limit)
       .lean()
       .exec();
+    return this.withAuthors(records);
   }
 
   // ── Clinical Notes ─────────────────────────────────────────────────────────
@@ -505,11 +612,12 @@ export class MedicalRecordsService {
   }
 
   async getClinicalNotes(patientId: string, orgId: string | null) {
-    return this.medicalRecordModel
+    const records = await this.medicalRecordModel
       .find({ patientId, organizationId: orgId, type: 'note', deletedAt: null })
       .sort({ createdAt: -1 })
       .lean()
       .exec();
+    return this.withAuthors(records);
   }
 
   // ── Prescriptions ──────────────────────────────────────────────────────────
@@ -579,11 +687,12 @@ export class MedicalRecordsService {
   }
 
   async getPrescriptions(patientId: string, orgId: string | null) {
-    return this.medicalRecordModel
+    const records = await this.medicalRecordModel
       .find({ patientId, organizationId: orgId, type: 'prescription', deletedAt: null })
       .sort({ 'data.prescribedAt': -1 })
       .lean()
       .exec();
+    return this.withAuthors(records);
   }
 
   // ── Lab Reports ────────────────────────────────────────────────────────────
@@ -646,11 +755,12 @@ export class MedicalRecordsService {
   }
 
   async getLabReports(patientId: string, orgId: string | null) {
-    return this.medicalRecordModel
+    const records = await this.medicalRecordModel
       .find({ patientId, organizationId: orgId, type: 'lab_report', deletedAt: null })
       .sort({ createdAt: -1 })
       .lean()
       .exec();
+    return this.withAuthors(records);
   }
 
   // ── Imaging Reports ────────────────────────────────────────────────────────
@@ -911,7 +1021,7 @@ export class MedicalRecordsService {
       metadata: { patientId },
     });
 
-    return {
+    return this.withAuthorsGrouped({
       encounters: encounters ?? [],
       diagnoses: diagnoses ?? [],
       vitals: vitals ?? [],
@@ -921,7 +1031,7 @@ export class MedicalRecordsService {
       imagingReports: imagingReports ?? [],
       vaccinations: vaccinations ?? [],
       procedures: procedures ?? [],
-    };
+    });
   }
 
   // ── Patient-visible record summary ──────────────────────────────────────────

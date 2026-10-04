@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { apiClient } from '@/lib/api/client';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatStaffName } from '@/lib/utils';
 
 // ─── Types (mirror GET /patients/:id/history) ──────────────────────────────────
 interface BaseHistoryRecord {
@@ -26,9 +26,18 @@ interface BaseHistoryRecord {
   type: string;
   encounterId: string | null;
   authorId: string;
+  /** Display identity of the authoring clinician, resolved server-side. */
+  authorName?: string | null;
+  authorRole?: string | null;
+  authorLabel?: string;
   facilityId: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/** "Dr. Anita Sharma", or null when the authoring account was removed. */
+function recordAuthor(record: BaseHistoryRecord): string | null {
+  return record.authorName ? formatStaffName(record.authorName, record.authorRole) : null;
 }
 
 interface EncounterData {
@@ -478,6 +487,7 @@ export function FullMedicalRecords({ patientId }: { patientId?: string }) {
                             )}
                             <p className="text-xs text-muted-foreground mt-2">
                               Diagnosed {formatDate(dx.data.diagnosedAt, 'short')}
+                              {recordAuthor(dx) ? ` by ${recordAuthor(dx)}` : ''}
                             </p>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
@@ -526,7 +536,8 @@ export function FullMedicalRecords({ patientId }: { patientId?: string }) {
                               </p>
                             )}
                             <p className="text-xs text-muted-foreground mt-2">
-                              From {formatDate(rx.data.prescribedAt, 'short')}
+                              Prescribed by {recordAuthor(rx) ?? 'Unknown'} · from{' '}
+                              {formatDate(rx.data.prescribedAt, 'short')}
                               {rx.data.expiresAt
                                 ? ` to ${formatDate(rx.data.expiresAt, 'short')}`
                                 : ''}

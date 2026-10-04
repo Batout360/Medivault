@@ -5,6 +5,7 @@ import { MedicalRecordsService } from './medical-records.service';
 import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 import { MedicalRecord, MedicalRecordSchema } from './schemas/medical-record.schema';
 import { Patient, PatientSchema } from '../patients/schemas/patient.schema';
+import { User, UserSchema } from '../users/schemas/user.schema';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { Patient, PatientSchema } from '../patients/schemas/patient.schema';
     MongooseModule.forFeature([
       { name: MedicalRecord.name, schema: MedicalRecordSchema },
       { name: Patient.name, schema: PatientSchema },
+      { name: User.name, schema: UserSchema },
     ]),
   ],
   controllers: [MedicalRecordsController],
