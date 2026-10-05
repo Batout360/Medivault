@@ -29,6 +29,8 @@ import {
   CalendarDays,
   KeyRound,
   Copy,
+  Ban,
+  RotateCcw,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -38,6 +40,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { SkeletonCard } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -57,6 +60,10 @@ import {
 } from '@/lib/utils';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import type { MedicalProfileCard as MedicalProfileCardData } from '@/lib/hooks/use-api';
+import {
+  useEndPrescription,
+  useReactivatePrescription,
+} from '@/lib/hooks/use-api';
 import { UserRole } from '@medivault/shared';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -183,6 +190,9 @@ interface Prescription {
   instructions: string | null;
   prescribedBy: string;
   status: string;
+  /** Why the course was stopped, when it has been ended. */
+  endReason: string | null;
+  endedAt: string | null;
 }
 
 interface Vital {
@@ -306,6 +316,8 @@ function toPrescription(doc: MedicalRecordDoc): Prescription {
     instructions: str(data.instructions),
     prescribedBy: authorName(doc),
     status: data.isActive === false ? 'INACTIVE' : 'ACTIVE',
+    endReason: str(data.endReason),
+    endedAt: str(data.endedAt),
   };
 }
 
@@ -1215,6 +1227,14 @@ export default function PatientProfilePage() {
     }
   };
 
+  // Ending / restarting a prescription. Both are clinician actions: the record
+  // is kept either way, only its status (and the current-medications list)
+  // changes.
+  const [rxToEnd, setRxToEnd] = React.useState<Prescription | null>(null);
+  const [endReason, setEndReason] = React.useState('');
+  const endPrescription = useEndPrescription(id);
+  const reactivatePrescription = useReactivatePrescription(id);
+
   // Patient data
   const { data: patient, isLoading: patientLoading } = useQuery({
     queryKey: ['patient', id],
@@ -1759,8 +1779,67 @@ export default function PatientProfilePage() {
                             ? ` to ${formatDate(rx.endDate, 'short')}`
                             : ''}
                         </p>
+                        {rx.endedAt && (
+                          <p className="text-xs text-muted-foreground">
+                            Ended {formatDate(rx.endedAt, 'short')}
+                            {rx.endReason ? ` · ${rx.endReason}` : ''}
+                          </p>
+                        )}
                       </div>
-                      <StatusBadge status={rx.status} />
+                      <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                        <StatusBadge status={rx.status} />
+                        {canAddClinical && (
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              asChild
+                              aria-label={`Edit ${rx.medicationName} prescription`}
+                            >
+                              <Link
+                                href={`/patients/${id}/prescriptions/${rx.id}/edit`}
+                              >
+                                <Edit className="h-3.5 w-3.5" />
+                                Edit
+                              </Link>
+                            </Button>
+                            {rx.status === 'ACTIVE' ? (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                aria-label={`End ${rx.medicationName} prescription`}
+                                onClick={() => {
+                                  setRxToEnd(rx);
+                                  setEndReason('');
+                                }}
+                              >
+                                <Ban className="h-3.5 w-3.5" />
+                                End
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                aria-label={`Make ${rx.medicationName} prescription active again`}
+                                loading={reactivatePrescription.isPending}
+                                onClick={() => {
+                                  reactivatePrescription
+                                    .mutateAsync(rx.id)
+                                    .then(() => toast.success('Prescription is active again.'))
+                                    .catch((err: unknown) =>
+                                      toast.error(
+                                        `Failed: ${normalizeError(err).message}`,
+                                      ),
+                                    );
+                                }}
+                              >
+                                <RotateCcw className="h-3.5 w-3.5" />
+                                Make Active
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -1935,6 +2014,65 @@ export default function PatientProfilePage() {
 
           <DialogFooter>
             <Button onClick={() => setLoginDialogOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── End prescription dialog ─────────────────────────────────────── */}
+      <Dialog
+        open={!!rxToEnd}
+        onOpenChange={(open) => !open && setRxToEnd(null)}
+      >
+        <DialogContent size="sm">
+          <DialogHeader>
+            <DialogTitle>End this prescription?</DialogTitle>
+            <DialogDescription>
+              {rxToEnd?.medicationName} will be removed from the
+              patient&apos;s current medications but stay in the record. You can
+              make it active again at any time.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="px-6 pb-4">
+            <Textarea
+              label="Reason"
+              placeholder="e.g. Course completed, patient improved"
+              hint="Optional"
+              value={endReason}
+              onChange={(e) => setEndReason(e.target.value)}
+            />
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              disabled={endPrescription.isPending}
+              onClick={() => setRxToEnd(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              loading={endPrescription.isPending}
+              onClick={() => {
+                if (!rxToEnd) return;
+                endPrescription
+                  .mutateAsync({
+                    id: rxToEnd.id,
+                    reason: endReason.trim() || undefined,
+                  })
+                  .then(() => {
+                    setRxToEnd(null);
+                    setEndReason('');
+                    toast.success('Prescription ended.');
+                  })
+                  .catch((err: unknown) =>
+                    toast.error(`Failed: ${normalizeError(err).message}`),
+                  );
+              }}
+            >
+              End Prescription
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

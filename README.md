@@ -304,6 +304,9 @@ POST   /api/v1/patients/:id/records/diagnoses
 
 GET    /api/v1/patients/:id/prescriptions
 POST   /api/v1/patients/:id/prescriptions
+PATCH  /api/v1/patients/:id/prescriptions/:prescriptionId
+POST   /api/v1/patients/:id/prescriptions/:prescriptionId/end
+POST   /api/v1/patients/:id/prescriptions/:prescriptionId/reactivate
 
 GET    /api/v1/patients/:id/records/vitals
 POST   /api/v1/patients/:id/records/vitals

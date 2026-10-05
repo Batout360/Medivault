@@ -20,6 +20,10 @@ import { CreateDiagnosisDto } from './dto/create-diagnosis.dto';
 import { CreateVitalDto } from './dto/create-vital.dto';
 import { CreateClinicalNoteDto } from './dto/create-clinical-note.dto';
 import { CreatePrescriptionDto } from './dto/create-prescription.dto';
+import {
+  EndPrescriptionDto,
+  UpdatePrescriptionDto,
+} from './dto/update-prescription.dto';
 import { CreateLabReportDto } from './dto/create-lab-report.dto';
 import { CreateImagingReportDto } from './dto/create-imaging-report.dto';
 import { CreateVaccinationDto } from './dto/create-vaccination.dto';
@@ -317,6 +321,69 @@ export class MedicalRecordsController {
     return this.medicalRecordsService.getPrescriptions(
       patientId,
       await this.orgIdFor(user, patientId),
+    );
+  }
+
+  @Patch('prescriptions/:prescriptionId')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.FACILITY_ADMIN, UserRole.DOCTOR)
+  @UseGuards(PatientAccessGuard)
+  @ApiOperation({
+    summary: 'Change a prescription (dose, frequency, duration, status …)',
+  })
+  async updatePrescription(
+    @Param('patientId', ParseUUIDPipe) patientId: string,
+    @Param('prescriptionId', ParseUUIDPipe) prescriptionId: string,
+    @Body() dto: UpdatePrescriptionDto,
+    @CurrentUser() user: AccessTokenPayload,
+    @Req() req: Request,
+  ): Promise<any> {
+    return this.medicalRecordsService.updatePrescription(
+      prescriptionId,
+      dto,
+      patientId,
+      await this.orgIdFor(user, patientId),
+      await this.reqUser(user, patientId),
+      this.ctx(req),
+    );
+  }
+
+  @Post('prescriptions/:prescriptionId/end')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.FACILITY_ADMIN, UserRole.DOCTOR)
+  @UseGuards(PatientAccessGuard)
+  @ApiOperation({ summary: 'End a prescription (stop the medication)' })
+  async endPrescription(
+    @Param('patientId', ParseUUIDPipe) patientId: string,
+    @Param('prescriptionId', ParseUUIDPipe) prescriptionId: string,
+    @Body() dto: EndPrescriptionDto,
+    @CurrentUser() user: AccessTokenPayload,
+    @Req() req: Request,
+  ): Promise<any> {
+    return this.medicalRecordsService.endPrescription(
+      prescriptionId,
+      dto ?? {},
+      patientId,
+      await this.orgIdFor(user, patientId),
+      await this.reqUser(user, patientId),
+      this.ctx(req),
+    );
+  }
+
+  @Post('prescriptions/:prescriptionId/reactivate')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.FACILITY_ADMIN, UserRole.DOCTOR)
+  @UseGuards(PatientAccessGuard)
+  @ApiOperation({ summary: 'Restart an ended prescription' })
+  async reactivatePrescription(
+    @Param('patientId', ParseUUIDPipe) patientId: string,
+    @Param('prescriptionId', ParseUUIDPipe) prescriptionId: string,
+    @CurrentUser() user: AccessTokenPayload,
+    @Req() req: Request,
+  ): Promise<any> {
+    return this.medicalRecordsService.reactivatePrescription(
+      prescriptionId,
+      patientId,
+      await this.orgIdFor(user, patientId),
+      await this.reqUser(user, patientId),
+      this.ctx(req),
     );
   }
 

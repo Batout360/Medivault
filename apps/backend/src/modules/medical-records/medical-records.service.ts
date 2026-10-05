@@ -13,6 +13,10 @@ import { CreateDiagnosisDto } from './dto/create-diagnosis.dto';
 import { CreateVitalDto } from './dto/create-vital.dto';
 import { CreateClinicalNoteDto } from './dto/create-clinical-note.dto';
 import { CreatePrescriptionDto } from './dto/create-prescription.dto';
+import {
+  EndPrescriptionDto,
+  UpdatePrescriptionDto,
+} from './dto/update-prescription.dto';
 import { CreateLabReportDto } from './dto/create-lab-report.dto';
 import { CreateImagingReportDto } from './dto/create-imaging-report.dto';
 import { CreateVaccinationDto } from './dto/create-vaccination.dto';
@@ -39,6 +43,7 @@ export interface RecordAuthor {
 
 /** Minimal shape needed to resolve a record's authoring clinician. */
 interface LeanRecord {
+  _id?: string;
   type?: string;
   authorId?: string | null;
   data?: Record<string, unknown>;
@@ -695,6 +700,205 @@ export class MedicalRecordsService {
     return this.withAuthors(records);
   }
 
+  /**
+   * Loads a prescription, scoped to the patient and organisation so an id from
+   * another tenant can never be amended through a valid patientId.
+   */
+  private async verifyPrescriptionOwnership(
+    prescriptionId: string,
+    patientId: string,
+    orgId: string | null,
+  ): Promise<LeanRecord> {
+    const record = await this.medicalRecordModel
+      .findOne({
+        _id: prescriptionId,
+        patientId,
+        organizationId: orgId,
+        type: 'prescription',
+        deletedAt: null,
+      })
+      .lean()
+      .exec();
+    if (!record) throw new NotFoundException(`Prescription ${prescriptionId} not found.`);
+    return record;
+  }
+
+  /**
+   * Applies a partial edit to a prescription.
+   *
+   * Only the keys present on the DTO are written, so a clinician amending one
+   * detail never blanks the rest of the order. `isActive` is routed through
+   * `applyPrescriptionActiveState` so ending/restoring a prescription always
+   * leaves the `endedAt` / `endReason` pair consistent with the flag.
+   */
+  async updatePrescription(
+    prescriptionId: string,
+    dto: UpdatePrescriptionDto,
+    patientId: string,
+    orgId: string | null,
+    requestingUser: RequestingUser,
+    ctx: RequestContext,
+  ): Promise<any> {
+    await this.verifyPrescriptionOwnership(prescriptionId, patientId, orgId);
+
+    const updates: Record<string, any> = { updatedAt: new Date() };
+
+    if (dto.medicationName !== undefined) updates['data.medicationName'] = dto.medicationName;
+    if (dto.genericName !== undefined) updates['data.genericName'] = dto.genericName;
+    if (dto.dosage !== undefined) updates['data.dosage'] = dto.dosage;
+    if (dto.frequency !== undefined) updates['data.frequency'] = dto.frequency;
+    if (dto.route !== undefined) updates['data.route'] = dto.route;
+    if (dto.duration !== undefined) updates['data.duration'] = dto.duration;
+    if (dto.quantity !== undefined) updates['data.quantity'] = dto.quantity;
+    if (dto.refills !== undefined) updates['data.refills'] = dto.refills;
+    if (dto.instructions !== undefined) updates['data.instructions'] = dto.instructions;
+    if (dto.expiresAt !== undefined)
+      updates['data.expiresAt'] = dto.expiresAt ? new Date(dto.expiresAt) : null;
+    if (dto.dispensedAt !== undefined)
+      updates['data.dispensedAt'] = dto.dispensedAt ? new Date(dto.dispensedAt) : null;
+
+    const { isActive, ...fieldChanges } = dto;
+    Object.assign(updates, this.applyPrescriptionActiveState({ isActive }));
+
+    await this.medicalRecordModel.updateOne({ _id: prescriptionId }, { $set: updates }).exec();
+
+    await this.auditLogs.log({
+      eventType: 'PRESCRIPTION_UPDATE',
+      userId: requestingUser.id,
+      organizationId: orgId,
+      resourceType: 'PRESCRIPTION',
+      resourceId: prescriptionId,
+      action: 'UPDATE_PRESCRIPTION',
+      result: 'success',
+      ipAddress: ctx.ip,
+      userAgent: ctx.userAgent,
+      requestId: ctx.requestId,
+      metadata: { patientId, changes: Object.keys(fieldChanges) },
+    });
+
+    return this.getPrescriptionById(prescriptionId, patientId, orgId);
+  }
+
+  /**
+   * Ends a prescription: it stops appearing on the patient's current medication
+   * list but stays in the record for audit. Idempotent — ending an already
+   * ended prescription preserves the original `endedAt` rather than stamping a
+   * new one.
+   */
+  async endPrescription(
+    prescriptionId: string,
+    dto: EndPrescriptionDto,
+    patientId: string,
+    orgId: string | null,
+    requestingUser: RequestingUser,
+    ctx: RequestContext,
+  ): Promise<any> {
+    const record = await this.verifyPrescriptionOwnership(prescriptionId, patientId, orgId);
+
+    const updates: Record<string, any> = {
+      ...this.applyPrescriptionActiveState({
+        isActive: false,
+        endedAt: dto?.endedAt ? new Date(dto.endedAt) : new Date(),
+        reason: dto?.reason ?? null,
+        existingEndedAt: record.data?.endedAt ? new Date(record.data.endedAt as string) : null,
+      }),
+      updatedAt: new Date(),
+    };
+
+    await this.medicalRecordModel.updateOne({ _id: prescriptionId }, { $set: updates }).exec();
+
+    await this.auditLogs.log({
+      eventType: 'PRESCRIPTION_END',
+      userId: requestingUser.id,
+      organizationId: orgId,
+      resourceType: 'PRESCRIPTION',
+      resourceId: prescriptionId,
+      action: 'END_PRESCRIPTION',
+      result: 'success',
+      ipAddress: ctx.ip,
+      userAgent: ctx.userAgent,
+      requestId: ctx.requestId,
+      metadata: { patientId, reason: dto?.reason ?? null },
+    });
+
+    return this.getPrescriptionById(prescriptionId, patientId, orgId);
+  }
+
+  /** Puts an ended prescription back on the patient's medication list. */
+  async reactivatePrescription(
+    prescriptionId: string,
+    patientId: string,
+    orgId: string | null,
+    requestingUser: RequestingUser,
+    ctx: RequestContext,
+  ): Promise<any> {
+    await this.verifyPrescriptionOwnership(prescriptionId, patientId, orgId);
+
+    const updates: Record<string, any> = {
+      ...this.applyPrescriptionActiveState({ isActive: true }),
+      updatedAt: new Date(),
+    };
+
+    await this.medicalRecordModel.updateOne({ _id: prescriptionId }, { $set: updates }).exec();
+
+    await this.auditLogs.log({
+      eventType: 'PRESCRIPTION_UPDATE',
+      userId: requestingUser.id,
+      organizationId: orgId,
+      resourceType: 'PRESCRIPTION',
+      resourceId: prescriptionId,
+      action: 'REACTIVATE_PRESCRIPTION',
+      result: 'success',
+      ipAddress: ctx.ip,
+      userAgent: ctx.userAgent,
+      requestId: ctx.requestId,
+      metadata: { patientId },
+    });
+
+    return this.getPrescriptionById(prescriptionId, patientId, orgId);
+  }
+
+  /**
+   * Derives the `isActive` / `endedAt` / `endReason` writes that must travel
+   * together, so the flag and the audit trail describing it cannot drift apart.
+   *
+   * Omitting `isActive` yields no writes at all, which lets a partial update
+   * reuse the same helper. `existingEndedAt` is passed through unchanged when a
+   * prescription is ended a second time, keeping the date the course stopped.
+   */
+  private applyPrescriptionActiveState(options: {
+    isActive?: boolean;
+    endedAt?: Date | null;
+    reason?: string | null;
+    existingEndedAt?: Date | null;
+  }): Record<string, any> {
+    const { isActive, endedAt, reason, existingEndedAt } = options;
+    if (isActive === undefined) return {};
+    if (isActive) {
+      return {
+        'data.isActive': true,
+        'data.endedAt': null,
+        'data.endReason': null,
+      };
+    }
+    return {
+      'data.isActive': false,
+      'data.endedAt': existingEndedAt ?? endedAt ?? new Date(),
+      'data.endReason': reason ?? null,
+    };
+  }
+
+  /** Returns a single prescription with its author resolved for display. */
+  private async getPrescriptionById(
+    prescriptionId: string,
+    patientId: string,
+    orgId: string | null,
+  ): Promise<any> {
+    const record = await this.verifyPrescriptionOwnership(prescriptionId, patientId, orgId);
+    const [withAuthor] = await this.withAuthors([record]);
+    return withAuthor;
+  }
+
   // ── Lab Reports ────────────────────────────────────────────────────────────
 
   async addLabReport(
@@ -1320,3 +1524,5 @@ export class MedicalRecordsService {
     };
   }
 }
+
+// temp marker

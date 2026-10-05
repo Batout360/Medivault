@@ -470,6 +470,63 @@ export function useCreatePrescription(patientId: string) {
   });
 }
 
+/** Partial edit of an existing prescription — dose, frequency, status, … */
+export function useUpdatePrescription(patientId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: object }) => {
+      const res = await apiClient.patch<PrescriptionRecord>(
+        `/patients/${patientId}/prescriptions/${id}`,
+        data,
+      );
+      return res.data;
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({
+        queryKey: queryKeys.patientPrescriptions(patientId),
+      });
+    },
+  });
+}
+
+/** Stops a prescription; it stays in the record but leaves the active list. */
+export function useEndPrescription(patientId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
+      const res = await apiClient.post<PrescriptionRecord>(
+        `/patients/${patientId}/prescriptions/${id}/end`,
+        reason ? { reason } : {},
+      );
+      return res.data;
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({
+        queryKey: queryKeys.patientPrescriptions(patientId),
+      });
+    },
+  });
+}
+
+/** Puts an ended prescription back on the patient's medication list. */
+export function useReactivatePrescription(patientId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiClient.post<PrescriptionRecord>(
+        `/patients/${patientId}/prescriptions/${id}/reactivate`,
+        {},
+      );
+      return res.data;
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({
+        queryKey: queryKeys.patientPrescriptions(patientId),
+      });
+    },
+  });
+}
+
 export function usePatientVitals(patientId: string) {
   return useQuery({
     queryKey: queryKeys.patientVitals(patientId),
