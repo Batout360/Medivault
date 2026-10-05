@@ -25,6 +25,16 @@ export const queryKeys = {
   patientDiagnoses: (id: string) => ['patient', id, 'diagnoses'] as const,
   patientPrescriptions: (id: string) =>
     ['patient', id, 'prescriptions'] as const,
+  /**
+   * A single prescription, keyed as a child of the list.
+   *
+   * React Query caches by key alone — it cannot tell that this resolves to one
+   * record while the list key resolves to an array — so the ids must be part of
+   * a longer key. Keeping it under the list means invalidating the list after a
+   * mutation refreshes the open prescription too.
+   */
+  patientPrescription: (id: string, prescriptionId: string) =>
+    ['patient', id, 'prescriptions', prescriptionId] as const,
   patientVitals: (id: string) => ['patient', id, 'vitals'] as const,
   patientLabs: (id: string) => ['patient', id, 'labs'] as const,
   patientEncounters: (id: string) => ['patient', id, 'encounters'] as const,

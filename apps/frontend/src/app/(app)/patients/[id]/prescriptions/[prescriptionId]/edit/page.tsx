@@ -24,6 +24,7 @@ import {
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { PatientAddRecordHeader } from '@/components/patient-add-record-header';
 import {
+  queryKeys,
   useEndPrescription,
   useReactivatePrescription,
   useUpdatePrescription,
@@ -306,7 +307,10 @@ export default function EditPrescriptionPage() {
   const [endReason, setEndReason] = React.useState('');
 
   const { data: prescription, isLoading } = useQuery({
-    queryKey: ['patient', id, 'prescriptions'],
+    // The key nests the id under the patient's list: React Query caches by key
+    // alone, so reusing the bare list key would overwrite the array every other
+    // page reads with this single record (and break its `.filter()`).
+    queryKey: queryKeys.patientPrescription(id, prescriptionId),
     queryFn: async () => {
       const res = await apiClient.get<PrescriptionDoc[]>(
         `/patients/${id}/prescriptions`,
