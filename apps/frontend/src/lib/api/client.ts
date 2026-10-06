@@ -6,6 +6,8 @@
  *   2. On 401 response, attempt a silent token refresh via /auth/refresh.
  *   3. If refresh succeeds, retry the original request with the new token.
  *   4. If refresh fails (session expired), redirect to /login.
+ *   5. Public verification endpoints and public pages are exempt: their 401s
+ *      never trigger a refresh or a login redirect (QR scanners are anonymous).
  *
  * Security:
  *   - Access token stays in memory (Zustand store), never in localStorage.
@@ -94,6 +96,14 @@ apiClient.interceptors.response.use((response: AxiosResponse) => {
 //
 let activeRefreshPromise: Promise<string> | null = null;
 
+// ─── Public endpoints (backend @Public()) ─────────────────────────────────────
+// QR scanners are anonymous: a 401 from these must never trigger a token
+// refresh or a login redirect — the caller renders its own state instead.
+const PUBLIC_API_PREFIXES = [
+  "/medical-profile/public/",
+  "/medical-profile/emergency/",
+];
+
 function executeRefresh(): Promise<string> {
   // If a refresh is already in flight, reuse it — do NOT start a second one.
   if (activeRefreshPromise) return activeRefreshPromise;
@@ -135,11 +145,18 @@ apiClient.interceptors.response.use(
       requestUrl.includes("/auth/login") ||
       requestUrl.includes("/auth/register");
 
+    // Public verification endpoints: reject as-is — no refresh, no session
+    // clear, no redirect (the QR scanner has no session to restore).
+    const isPublicEndpoint = PUBLIC_API_PREFIXES.some((prefix) =>
+      requestUrl.includes(prefix),
+    );
+
     if (
       error.response?.status !== 401 ||
       originalRequest?._retry ||
       !originalRequest ||
-      isAuthEndpoint
+      isAuthEndpoint ||
+      isPublicEndpoint
     ) {
       return Promise.reject(normalizeError(error));
     }
@@ -154,14 +171,15 @@ apiClient.interceptors.response.use(
       return apiClient(originalRequest);
     } catch (refreshError) {
       // Refresh failed — clear session and redirect to login.
-      // If we're already on a public auth page, don't redirect: assigning
+      // If we're on a public page, don't redirect: assigning
       // window.location.href to the current URL triggers a FULL page reload,
       // which remounts AuthInitializer → initialize() → another /auth/session
       // → another failed refresh, causing an infinite reload loop.
+      // /verify/** is public (anonymous QR scanners) and must never redirect.
       clearSession?.();
       if (
         typeof window !== "undefined" &&
-        !isPublicAuthPage(window.location.pathname)
+        !isPublicPage(window.location.pathname)
       ) {
         window.location.replace("/login?reason=session_expired");
       }
@@ -179,6 +197,15 @@ function isPublicAuthPage(pathname: string): boolean {
     pathname.startsWith("/register") ||
     pathname.startsWith("/forgot-password")
   );
+}
+
+/**
+ * Pages that must never auto-redirect to /login on a failed refresh:
+ * public auth pages (reload-loop) and the public QR verification page
+ * (anonymous scanners have no session to restore).
+ */
+function isPublicPage(pathname: string): boolean {
+  return isPublicAuthPage(pathname) || pathname.startsWith("/verify");
 }
 
 export interface ApiError {
