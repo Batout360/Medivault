@@ -35,7 +35,7 @@ import { MedicalProfileCardView } from "@/components/medical-profile-card";
 import { VisibilitySettingsPanel } from "@/components/visibility-settings-panel";
 import { ChangePasswordForm } from "@/components/change-password-form";
 import { apiClient } from "@/lib/api/client";
-import { formatDate, calculateAge } from "@/lib/utils";
+import { formatDate, calculateAge, formatBloodGroup } from "@/lib/utils";
 import { useAuthStore } from "@/lib/stores/auth.store";
 import type { MedicalProfileCard } from "@/lib/hooks/use-api";
 import { UserRole, UserRoleLabels, PATIENT_ROLES } from "@medivault/shared";
@@ -907,7 +907,7 @@ function PatientProfileSection() {
           </div>
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Blood Group</p>
-            <p className="text-sm font-bold text-red-600 dark:text-red-400 mt-0.5">{p.bloodGroup ?? '—'}</p>
+            <p className="text-sm font-bold text-red-600 dark:text-red-400 mt-0.5">{formatBloodGroup(p.bloodGroup)}</p>
           </div>
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Date of Birth</p>
@@ -1011,7 +1011,7 @@ function PatientProfileSection() {
           <DetailRow
             icon={Shield}
             label="Blood group"
-            value={p.bloodGroup ?? "—"}
+            value={formatBloodGroup(p.bloodGroup)}
           />
           <DetailRow icon={Phone} label="Phone" value={p.phoneNumber ?? "—"} />
           <DetailRow icon={Mail} label="Email" value={p.email ?? "—"} />

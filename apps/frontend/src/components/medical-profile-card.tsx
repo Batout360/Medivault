@@ -13,7 +13,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api/client';
-import { calculateAge, formatDate } from '@/lib/utils';
+import { calculateAge, formatDate, formatBloodGroup } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
@@ -131,7 +131,7 @@ function buildCardSvg(card: MedicalProfileCard, qrDataUrl: string): string {
     <text x="420" y="300" class="label">GENDER</text>
     <text x="420" y="334" class="value">${escapeXml(p.gender)}</text>
     <text x="420" y="390" class="label">BLOOD GROUP</text>
-    <text x="420" y="424" class="value">${p.bloodGroup ?? '—'}</text>
+    <text x="420" y="424" class="value">${formatBloodGroup(p.bloodGroup)}</text>
   </g>
   <g>
     <text x="780" y="300" class="label">PHONE</text>
@@ -352,7 +352,7 @@ export function MedicalProfileCardView({
           </div>
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1"><Droplet className="h-3 w-3" />Blood Group</p>
-            <p className="text-base font-bold text-red-600 dark:text-red-400 mt-0.5">{p.bloodGroup ?? '—'}</p>
+            <p className="text-base font-bold text-red-600 dark:text-red-400 mt-0.5">{formatBloodGroup(p.bloodGroup)}</p>
           </div>
           <div className="col-span-2">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">MediVault ID</p>
@@ -496,7 +496,7 @@ function buildPrintHtml(card: MedicalProfileCard, qrDataUrl: string): string {
       <div>
         <h1>MEDIVAULT · MEDICAL PROFILE CARD</h1>
         <p class="sub">${escapeXml(fullName)} · ${escapeXml(p.mrn)}</p>
-        <p class="sub">ID ${escapeXml(p.profileId ?? '')} · ${escapeXml(p.gender)} · ${escapeXml(p.bloodGroup ?? '—')}</p>
+        <p class="sub">ID ${escapeXml(p.profileId ?? '')} · ${escapeXml(p.gender)} · ${escapeXml(formatBloodGroup(p.bloodGroup))}</p>
       </div>
       <img class="qr" src="${qrDataUrl}" alt="QR"/>
     </div>

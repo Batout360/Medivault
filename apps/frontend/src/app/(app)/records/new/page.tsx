@@ -21,7 +21,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { apiClient } from '@/lib/api/client';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { UserRole } from '@medivault/shared';
-import { formatDate, calculateAge } from '@/lib/utils';
+import { formatDate, calculateAge, formatBloodGroup } from '@/lib/utils';
 
 interface SearchPatientItem {
   id?: string;
@@ -194,7 +194,7 @@ export default function NewRecordPage() {
                                   variant="gray"
                                   className="font-mono text-xs"
                                 >
-                                  {p.bloodGroup}
+                                  {formatBloodGroup(p.bloodGroup)}
                                 </Badge>
                               )}
                             </div>

@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   RotateCcw,
   ArrowRight,
+  ChevronLeft,
   Shield,
   WifiOff,
   Info,
@@ -436,7 +437,25 @@ export default function FingerprintPage() {
             ? "Register the user's fingerprint for future identification"
             : 'Identify a user using their fingerprint biometric'}
         </p>
+        {isEnrollMode && (
+          <p className="text-xs text-muted-foreground">
+            Enrollment is optional — the user is already registered and can be
+            enrolled at any time later.
+          </p>
+        )}
       </div>
+
+      {/* Enrollment is optional — always offer a way out */}
+      {isEnrollMode && (
+        <div className="flex justify-center">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href={enrollPatientId ? `/patients/${enrollPatientId}` : '/patients'}>
+              <ChevronLeft className="h-4 w-4" />
+              Skip enrollment
+            </Link>
+          </Button>
+        </div>
+      )}
 
       {/* ─── Device status ────────────────────────────────────────────── */}
       <div className="flex items-center justify-center gap-2 min-h-[32px]">

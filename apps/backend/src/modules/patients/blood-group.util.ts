@@ -22,6 +22,9 @@ const BLOOD_GROUP_ENUM_TO_SYMBOL: Record<string, string> = Object.entries(
   return acc;
 }, {});
 
+/** Canonical enum spellings accepted verbatim ("A_POSITIVE"). */
+const BLOOD_GROUP_ENUM_VALUES = new Set(Object.keys(BLOOD_GROUP_ENUM_TO_SYMBOL));
+
 /** Every accepted spelling for a blood group, enum form first. */
 const BLOOD_GROUP_ALIASES: Record<string, string[]> = Object.entries(
   BLOOD_GROUP_SYMBOL_TO_ENUM,
@@ -42,11 +45,16 @@ export function bloodGroupAliases(value: string): string[] | undefined {
   return BLOOD_GROUP_ALIASES[value.trim().toUpperCase()];
 }
 
-/** Normalise any accepted spelling to the canonical enum stored in Mongo. */
+/**
+ * Normalise any accepted spelling — symbol ("A+"), canonical enum
+ * ("A_POSITIVE") or "UNKNOWN" — to the canonical enum stored in Mongo.
+ * Unrecognised values normalise to null.
+ */
 export function normalizeBloodGroup(value: string | null | undefined): string | null {
   if (!value) return null;
   const key = value.trim().toUpperCase();
   if (key === 'UNKNOWN') return 'UNKNOWN';
+  if (BLOOD_GROUP_ENUM_VALUES.has(key)) return key;
   return BLOOD_GROUP_SYMBOL_TO_ENUM[key] ?? null;
 }
 

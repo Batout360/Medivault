@@ -28,7 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
 import { SkeletonCard } from '@/components/ui/skeleton';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatBloodGroup } from '@/lib/utils';
 import { UserRole } from '@medivault/shared';
 import type { MedicalProfileCard, PublicProfileResult } from '@/lib/hooks/use-api';
 
@@ -80,7 +80,7 @@ function BloodBadge({ group }: { group: string }) {
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-1.5 text-2xl font-bold text-red-600 dark:text-red-400">
       <Droplet className="h-5 w-5" />
-      {group}
+      {formatBloodGroup(group)}
     </span>
   );
 }

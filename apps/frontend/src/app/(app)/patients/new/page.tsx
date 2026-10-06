@@ -78,7 +78,7 @@ const steps = [
   { id: 2, label: 'Contact', icon: Phone },
   { id: 3, label: 'Emergency', icon: Heart },
   { id: 4, label: 'Medical', icon: AlertTriangle },
-  { id: 5, label: 'Biometric', icon: Fingerprint },
+  { id: 5, label: 'Biometric (Optional)', icon: Fingerprint },
 ];
 
 // ─── Section heading ──────────────────────────────────────────────────────────
@@ -474,10 +474,16 @@ export default function PatientRegistrationPage() {
               <Fingerprint className="h-8 w-8 text-violet-600 dark:text-violet-400" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold">Fingerprint Enrollment</h2>
+              <div className="flex items-center justify-center gap-2">
+                <h2 className="text-lg font-semibold">Fingerprint Enrollment</h2>
+                <span className="rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-violet-700 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300">
+                  Optional
+                </span>
+              </div>
               <p className="text-sm text-muted-foreground mt-1">
-                The patient has been successfully registered. You can now enroll
-                their fingerprint for biometric identification.
+                The user has been successfully registered. Enrolling a fingerprint
+                is optional — you can skip it and enroll later from the user&apos;s
+                profile at any time.
               </p>
             </div>
 

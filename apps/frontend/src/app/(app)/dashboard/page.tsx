@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
-import { cn, formatDate } from "@/lib/utils";
+import { cn, formatDate, formatBloodGroup } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -361,7 +361,7 @@ function MediVaultIdCard() {
             Blood Group
           </p>
           <p className="text-sm font-bold text-red-600 dark:text-red-400 mt-0.5">
-            {me.bloodGroup ?? "—"}
+            {formatBloodGroup(me.bloodGroup)}
           </p>
         </div>
         <div>
@@ -735,7 +735,7 @@ export default function DashboardPage() {
         fullName: [p.firstName, p.lastName].filter(Boolean).join(" "),
         age: ageFromDateOfBirth(p.dateOfBirth),
         gender: p.gender ?? "",
-        bloodGroup: p.bloodGroup ?? "—",
+        bloodGroup: formatBloodGroup(p.bloodGroup),
         lastVisit: p.registeredAt ?? p.updatedAt ?? new Date().toISOString(),
       }));
     },

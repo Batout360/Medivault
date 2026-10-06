@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { apiClient } from '@/lib/api/client';
-import { formatDate, calculateAge } from '@/lib/utils';
+import { formatDate, calculateAge, formatBloodGroup } from '@/lib/utils';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { PATIENT_ROLES } from '@medivault/shared';
 import { RecordAccessHistory } from '@/components/record-access-history';
@@ -286,7 +286,7 @@ function MyRecordsInner() {
               <p>Age {calculateAge(p.dateOfBirth)} · {formatDate(p.dateOfBirth, 'short')}</p>
               <p className="capitalize">{p.gender.toLowerCase()}</p>
               <p className="font-semibold text-red-600 dark:text-red-400">
-                Blood group: {p.bloodGroup ?? '—'}
+                Blood group: {formatBloodGroup(p.bloodGroup)}
               </p>
             </div>
           </div>
