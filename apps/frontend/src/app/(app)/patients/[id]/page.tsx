@@ -42,6 +42,13 @@ import { Avatar } from '@/components/ui/avatar';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -63,6 +70,7 @@ import type { MedicalProfileCard as MedicalProfileCardData } from '@/lib/hooks/u
 import {
   useEndPrescription,
   useReactivatePrescription,
+  useUpdateCondition,
 } from '@/lib/hooks/use-api';
 import { UserRole } from '@medivault/shared';
 
@@ -1234,6 +1242,7 @@ export default function PatientProfilePage() {
   const [endReason, setEndReason] = React.useState('');
   const endPrescription = useEndPrescription(id);
   const reactivatePrescription = useReactivatePrescription(id);
+  const updateCondition = useUpdateCondition(id);
 
   // Patient data
   const { data: patient, isLoading: patientLoading } = useQuery({
@@ -1521,15 +1530,68 @@ export default function PatientProfilePage() {
               </CardHeader>
               <CardContent>
                 {patient.conditions?.length > 0 ? (
-                  <ul className="space-y-1">
+                  <ul className="space-y-2">
                     {patient.conditions.map((c) => (
-                      <li key={c.id} className="text-sm text-muted-foreground">
-                        {c.conditionName}
-                        {c.status && c.status !== 'ACTIVE' && (
-                          <span className="ml-1 text-xs opacity-70">
-                            ({c.status})
+                      <li
+                        key={c.id}
+                        className="flex items-center justify-between gap-3"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm text-muted-foreground truncate">
+                            {c.conditionName}
+                            {c.conditionCode && (
+                              <span className="ml-1.5 font-mono text-xs opacity-70">
+                                {c.conditionCode}
+                              </span>
+                            )}
+                          </p>
+                          {c.diagnosedAt && (
+                            <p className="text-xs text-muted-foreground/70">
+                              Diagnosed {formatDate(c.diagnosedAt, 'short')}
+                            </p>
+                          )}
+                        </div>
+                        {canAddClinical ? (
+                          <Select
+                            value={c.status ?? 'ACTIVE'}
+                            onValueChange={(status) =>
+                              updateCondition.mutate(
+                                { conditionId: c.id, status },
+                                {
+                                  onSuccess: () =>
+                                    toast.success(
+                                      `${c.conditionName} marked ${status.toLowerCase()}.`,
+                                    ),
+                                  onError: (err) =>
+                                    toast.error(normalizeError(err).message),
+                                },
+                              )
+                            }
+                          >
+                            <SelectTrigger
+                              className="h-8 w-32 text-xs flex-shrink-0"
+                              aria-label={`Status for ${c.conditionName}`}
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {[
+                                'ACTIVE',
+                                'RESOLVED',
+                                'CHRONIC',
+                                'INACTIVE',
+                              ].map((s) => (
+                                <SelectItem key={s} value={s}>
+                                  {s}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : c.status && c.status !== 'ACTIVE' ? (
+                          <span className="text-xs opacity-70 flex-shrink-0">
+                            {c.status}
                           </span>
-                        )}
+                        ) : null}
                       </li>
                     ))}
                   </ul>

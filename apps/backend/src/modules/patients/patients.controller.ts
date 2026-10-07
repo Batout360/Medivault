@@ -18,6 +18,7 @@ import { PatientsService } from './patients.service';
 import { MedicalProfileService } from '../medical-profile/medical-profile.service';
 import { CreatePatientDto, AllergyDto, EmergencyContactDto } from './dto/create-patient.dto';
 import { UpdatePatientDto } from './dto/update-patient.dto';
+import { UpdateConditionDto } from './dto/update-condition.dto';
 import { UpdateMePatientDto } from './dto/update-me-patient.dto';
 import { PatientSearchDto } from './dto/patient-search.dto';
 import { GenerateQrDto } from '../medical-profile/dto/generate-qr.dto';
@@ -299,6 +300,26 @@ export class PatientsController {
     return this.patientsService.removeAllergy(
       allergyId,
       id,
+      user.organizationId ?? null,
+      user.sub,
+      user.role,
+    );
+  }
+
+  @Patch(':id/conditions/:conditionId')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.FACILITY_ADMIN, UserRole.DOCTOR)
+  @UseGuards(PatientAccessGuard)
+  @ApiOperation({ summary: 'Update a medical condition (e.g. mark resolved)' })
+  updateCondition(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('conditionId', ParseUUIDPipe) conditionId: string,
+    @Body() dto: UpdateConditionDto,
+    @CurrentUser() user: AccessTokenPayload,
+  ) {
+    return this.patientsService.updateCondition(
+      id,
+      conditionId,
+      dto,
       user.organizationId ?? null,
       user.sub,
       user.role,

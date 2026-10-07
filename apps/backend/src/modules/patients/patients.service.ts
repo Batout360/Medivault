@@ -17,6 +17,7 @@ import { UpdatePatientDto } from './dto/update-patient.dto';
 import { PatientSearchDto } from './dto/patient-search.dto';
 import { UpdateMePatientDto } from './dto/update-me-patient.dto';
 import { AllergyDto, EmergencyContactDto } from './dto/create-patient.dto';
+import { UpdateConditionDto } from './dto/update-condition.dto';
 import { paginate, PaginatedResult } from '../../common/dto/pagination.dto';
 import { Patient, PatientDocument } from './schemas/patient.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
@@ -1175,6 +1176,69 @@ export class PatientsService {
     });
 
     return { message: 'Allergy removed.' };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Condition management (embedded array)
+  // ---------------------------------------------------------------------------
+
+  async updateCondition(
+    patientId: string,
+    conditionId: string,
+    dto: UpdateConditionDto,
+    organizationId: string | null,
+    userId: string,
+    role: string,
+  ) {
+    const patient = await this.ensurePatientExists(patientId, organizationId, role);
+
+    const set: Record<string, unknown> = { updatedAt: new Date() };
+    if (dto.conditionName !== undefined)
+      set['conditions.$[elem].conditionName'] = dto.conditionName;
+    if (dto.conditionCode !== undefined)
+      set['conditions.$[elem].conditionCode'] = dto.conditionCode;
+    if (dto.status !== undefined) set['conditions.$[elem].status'] = dto.status;
+    if (dto.diagnosedAt !== undefined)
+      set['conditions.$[elem].diagnosedAt'] = new Date(dto.diagnosedAt);
+    if (dto.notes !== undefined) set['conditions.$[elem].notes'] = dto.notes;
+
+    const filter: Record<string, unknown> = {
+      _id: patientId,
+      deletedAt: null,
+      'conditions.id': conditionId,
+    };
+    if (role !== 'SUPER_ADMIN') filter['organizationId'] = organizationId;
+
+    const result = await this.patientModel.updateOne(
+      filter,
+      { $set: set },
+      { arrayFilters: [{ 'elem.id': conditionId }] },
+    );
+
+    const existing = (patient.conditions ?? []).find((c) => c.id === conditionId);
+    if (!existing || result.matchedCount === 0) {
+      throw new NotFoundException('Condition not found.');
+    }
+
+    await this.auditLogs.log({
+      eventType: 'PATIENT_UPDATE',
+      userId,
+      organizationId,
+      resourceType: 'PATIENT',
+      resourceId: patientId,
+      action: 'UPDATE_CONDITION',
+      result: 'success',
+      metadata: { conditionId, fields: Object.keys(dto) },
+    });
+
+    return {
+      ...existing,
+      conditionName: dto.conditionName ?? existing.conditionName,
+      conditionCode: dto.conditionCode !== undefined ? dto.conditionCode : existing.conditionCode,
+      status: dto.status ?? existing.status,
+      diagnosedAt: dto.diagnosedAt ? new Date(dto.diagnosedAt) : existing.diagnosedAt,
+      notes: dto.notes !== undefined ? dto.notes : existing.notes,
+    };
   }
 
   // ---------------------------------------------------------------------------

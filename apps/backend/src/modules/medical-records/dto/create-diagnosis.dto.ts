@@ -1,5 +1,15 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  ArrayNotEmpty,
+  IsArray,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  ValidateNested,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { MedicalConditionDto } from '../../patients/dto/create-patient.dto';
 
 export enum DiagnosisTypeEnum {
   PRIMARY = 'PRIMARY',
@@ -33,22 +43,35 @@ export class CreateDiagnosisDto {
   @IsNotEmpty()
   declare diagnosisName: string;
 
-  @ApiProperty({ enum: DiagnosisTypeEnum })
-  @IsEnum(DiagnosisTypeEnum)
-  declare diagnosisType: DiagnosisTypeEnum;
+  @ApiPropertyOptional({ description: 'Diagnosis type' })
+  @IsOptional()
+  @IsString()
+  diagnosisType?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   severity?: string;
 
-  @ApiPropertyOptional({ enum: DiagnosisStatusEnum })
+  @ApiPropertyOptional({ description: 'Diagnosis status' })
   @IsOptional()
-  @IsEnum(DiagnosisStatusEnum)
-  status?: DiagnosisStatusEnum;
+  @IsString()
+  status?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional({
+    type: [MedicalConditionDto],
+    description:
+      'Medical conditions recorded alongside this diagnosis; pushed onto the patient record',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayNotEmpty()
+  @ValidateNested({ each: true })
+  @Type(() => MedicalConditionDto)
+  conditions?: MedicalConditionDto[];
 }

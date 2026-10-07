@@ -6,6 +6,7 @@ import { PATIENT_ROLES } from '@medivault/shared';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { paginate, PaginationDto, PaginatedResult } from '../../common/dto/pagination.dto';
 import { MedicalRecord, MedicalRecordDocument } from './schemas/medical-record.schema';
+import { Patient, PatientDocument, PatientCondition } from '../patients/schemas/patient.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
 
 import { CreateEncounterDto, UpdateEncounterDto } from './dto/create-encounter.dto';
@@ -78,6 +79,8 @@ export class MedicalRecordsService {
   constructor(
     @InjectModel(MedicalRecord.name)
     private readonly medicalRecordModel: Model<MedicalRecordDocument>,
+    @InjectModel(Patient.name)
+    private readonly patientModel: Model<PatientDocument>,
     @InjectModel(User.name)
     private readonly userModel: Model<UserDocument>,
     private readonly auditLogs: AuditLogsService,
@@ -481,6 +484,33 @@ export class MedicalRecordsService {
       deletedAt: null,
     }).save();
 
+    const conditions = (dto.conditions ?? [])
+      .filter((c) => c.conditionName?.trim())
+      .map<PatientCondition>((c) => ({
+        id: uuidv4(),
+        conditionName: c.conditionName.trim(),
+        conditionCode: c.conditionCode?.trim() || null,
+        status: c.status ?? 'ACTIVE',
+        diagnosedAt: c.diagnosedAt ? new Date(c.diagnosedAt) : now,
+        notes: c.notes?.trim() || null,
+        createdAt: now,
+      }));
+
+    if (conditions.length > 0) {
+      const pushResult = await this.patientModel.updateOne(
+        { _id: patientId, organizationId: orgId },
+        {
+          $push: { conditions: { $each: conditions } },
+          $set: { updatedAt: now },
+        },
+      );
+      if (pushResult.matchedCount === 0) {
+        this.logger.warn(
+          `Diagnosis ${id} saved but its conditions were not attached: patient ${patientId} not found in org ${orgId}.`,
+        );
+      }
+    }
+
     await this.auditLogs.log({
       eventType: 'MEDICAL_RECORD_CREATE',
       userId: addedById,
@@ -492,7 +522,11 @@ export class MedicalRecordsService {
       ipAddress: ctx.ip,
       userAgent: ctx.userAgent,
       requestId: ctx.requestId,
-      metadata: { patientId, medicalRecordId: dto.medicalRecordId },
+      metadata: {
+        patientId,
+        medicalRecordId: dto.medicalRecordId,
+        conditionsAdded: conditions.length,
+      },
     });
 
     return doc.toObject();

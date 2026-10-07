@@ -76,9 +76,12 @@ function makeService(
     }),
   });
   const userModel: any = { find: userFind };
+  const patientModel: any = {
+    updateOne: jest.fn().mockResolvedValue({ acknowledged: true, modifiedCount: 1 }),
+  };
 
   return {
-    service: new MedicalRecordsService(model, userModel, auditLogs as any),
+    service: new MedicalRecordsService(model, patientModel, userModel, auditLogs as any),
     collections,
     model,
     userFind,

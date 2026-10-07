@@ -2,10 +2,10 @@
 
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Stethoscope, Plus, ClipboardList } from 'lucide-react';
+import { Stethoscope, Plus, ClipboardList, Trash2, HeartPulse } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -45,6 +45,8 @@ const DIAGNOSIS_STATUSES = [
 
 const SEVERITIES = ['MILD', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
 
+const CONDITION_STATUSES = ['ACTIVE', 'RESOLVED', 'CHRONIC', 'INACTIVE'] as const;
+
 const ENCOUNTER_TYPES = [
   'OUTPATIENT',
   'INPATIENT',
@@ -64,18 +66,25 @@ const CAN_WRITE_ROLES = new Set<string>([
 ]);
 
 // ─── Validation ───────────────────────────────────────────────────────────────
+const conditionRowSchema = z.object({
+  conditionName: z.string().min(1, 'Condition name is required').max(200),
+  conditionCode: z.string().max(50).optional().or(z.literal('')),
+  status: z.string().optional().or(z.literal('')),
+  diagnosedAt: z.string().optional().or(z.literal('')),
+  notes: z.string().max(2000).optional().or(z.literal('')),
+});
+
 const diagnosisSchema = z.object({
   medicalRecordId: z
     .string()
     .min(1, 'Select the encounter this diagnosis belongs to'),
   diagnosisCode: z.string().max(50).optional().or(z.literal('')),
   diagnosisName: z.string().min(2, 'Diagnosis name is required').max(200),
-  diagnosisType: z.enum(DIAGNOSIS_TYPES, {
-    required_error: 'Diagnosis type is required',
-  }),
-  severity: z.string().optional(),
-  status: z.string().optional(),
+  diagnosisType: z.string().optional().or(z.literal('')),
+  severity: z.string().optional().or(z.literal('')),
+  status: z.string().optional().or(z.literal('')),
   notes: z.string().max(2000).optional().or(z.literal('')),
+  conditions: z.array(conditionRowSchema),
 });
 
 type DiagnosisFormValues = z.infer<typeof diagnosisSchema>;
@@ -144,6 +153,7 @@ export default function NewDiagnosisPage() {
     register,
     control,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<DiagnosisFormValues>({
     resolver: zodResolver(diagnosisSchema),
@@ -151,7 +161,13 @@ export default function NewDiagnosisPage() {
       diagnosisCode: '',
       diagnosisName: '',
       notes: '',
+      conditions: [],
     },
+  });
+
+  const conditionFields = useFieldArray({
+    control,
+    name: 'conditions',
   });
 
   const encounterForm = useForm<EncounterFormValues>({
@@ -207,14 +223,24 @@ export default function NewDiagnosisPage() {
 
   const onSubmit = async (values: DiagnosisFormValues) => {
     try {
+      const conditions = values.conditions.map((c) => ({
+        conditionName: c.conditionName.trim(),
+        conditionCode: c.conditionCode?.trim() || undefined,
+        status: c.status || undefined,
+        diagnosedAt: c.diagnosedAt
+          ? new Date(`${c.diagnosedAt}T00:00:00`).toISOString()
+          : undefined,
+        notes: c.notes?.trim() || undefined,
+      }));
       await createDiagnosis.mutateAsync({
         medicalRecordId: values.medicalRecordId,
         diagnosisCode: values.diagnosisCode || undefined,
         diagnosisName: values.diagnosisName,
-        diagnosisType: values.diagnosisType,
+        diagnosisType: values.diagnosisType || undefined,
         severity: values.severity || undefined,
         status: values.status || undefined,
         notes: values.notes || undefined,
+        conditions: conditions.length > 0 ? conditions : undefined,
       });
       toast.success('Diagnosis added successfully.');
       router.push(`/patients/${id}`);
@@ -226,6 +252,7 @@ export default function NewDiagnosisPage() {
   };
 
   const encounters = encountersData?.data ?? [];
+  const encounterId = watch('medicalRecordId');
 
   return (
     <div className="space-y-6">
@@ -402,8 +429,7 @@ export default function NewDiagnosisPage() {
                 render={({ field }) => (
                   <LabeledSelect
                     label="Diagnosis Type"
-                    required
-                    placeholder="Select type…"
+                    placeholder="Select type"
                     value={field.value ?? ''}
                     onValueChange={field.onChange}
                     error={errors.diagnosisType?.message}
@@ -472,7 +498,125 @@ export default function NewDiagnosisPage() {
           </CardContent>
         </Card>
 
-        <div className="flex justify-end gap-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <HeartPulse className="h-4 w-4 text-muted-foreground" />
+              Medical Conditions
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Record any medical conditions identified with this diagnosis.
+              They are saved to the patient&apos;s record and can be updated
+              (e.g. marked resolved) later from the patient profile.
+            </p>
+
+            {conditionFields.fields.map((row, index) => {
+              const rowErrors = errors.conditions?.[index];
+              return (
+                <div
+                  key={row.id}
+                  className="rounded-lg border border-border p-4 space-y-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium">
+                      Condition {index + 1}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => conditionFields.remove(index)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Remove
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="sm:col-span-2">
+                      <Input
+                        label="Condition Name"
+                        placeholder="e.g. Type 2 diabetes mellitus"
+                        required
+                        error={rowErrors?.conditionName?.message}
+                        {...register(`conditions.${index}.conditionName`)}
+                      />
+                    </div>
+                    <Input
+                      label="Condition Code (ICD-10)"
+                      placeholder="e.g. E11.9"
+                      hint="Optional"
+                      error={rowErrors?.conditionCode?.message}
+                      {...register(`conditions.${index}.conditionCode`)}
+                    />
+                    <Controller
+                      name={`conditions.${index}.status`}
+                      control={control}
+                      render={({ field }) => (
+                        <LabeledSelect
+                          label="Status"
+                          placeholder="Active…"
+                          value={field.value ?? ''}
+                          onValueChange={field.onChange}
+                          error={rowErrors?.status?.message}
+                        >
+                          {CONDITION_STATUSES.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
+                          ))}
+                        </LabeledSelect>
+                      )}
+                    />
+                    <Input
+                      label="Diagnosed On"
+                      type="date"
+                      max={new Date().toISOString().split('T')[0]}
+                      hint="Optional"
+                      error={rowErrors?.diagnosedAt?.message}
+                      {...register(`conditions.${index}.diagnosedAt`)}
+                    />
+                    <div className="sm:col-span-2">
+                      <Textarea
+                        label="Notes"
+                        placeholder="Context, treatment, etc."
+                        hint="Optional"
+                        error={rowErrors?.notes?.message}
+                        {...register(`conditions.${index}.notes`)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                conditionFields.append({
+                  conditionName: '',
+                  conditionCode: '',
+                  status: 'ACTIVE',
+                  diagnosedAt: new Date().toISOString().split('T')[0],
+                  notes: '',
+                })
+              }
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add Condition
+            </Button>
+          </CardContent>
+        </Card>
+
+        <div className="flex items-center justify-end gap-2">
+          {!encounterId && (
+            <p className="mr-auto text-xs text-muted-foreground">
+              Select the encounter this diagnosis belongs to before saving.
+            </p>
+          )}
           <Button
             type="button"
             variant="outline"
@@ -480,7 +624,16 @@ export default function NewDiagnosisPage() {
           >
             Cancel
           </Button>
-          <Button type="submit" loading={isSubmitting}>
+          <Button
+            type="submit"
+            loading={isSubmitting}
+            disabled={!encounterId}
+            title={
+              encounterId
+                ? undefined
+                : 'Select the encounter this diagnosis belongs to first'
+            }
+          >
             Save Diagnosis
           </Button>
         </div>

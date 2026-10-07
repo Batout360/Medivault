@@ -444,6 +444,27 @@ export function useCreateDiagnosis(patientId: string) {
       void qc.invalidateQueries({
         queryKey: queryKeys.patientDiagnoses(patientId),
       });
+      // Conditions created with the diagnosis land on the patient document.
+      void qc.invalidateQueries({ queryKey: queryKeys.patient(patientId) });
+    },
+  });
+}
+
+export function useUpdateCondition(patientId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      conditionId,
+      ...data
+    }: { conditionId: string } & Record<string, unknown>) => {
+      const res = await apiClient.patch<Record<string, unknown>>(
+        `/patients/${patientId}/conditions/${conditionId}`,
+        data,
+      );
+      return res.data;
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.patient(patientId) });
     },
   });
 }
