@@ -96,6 +96,7 @@ interface PatientCondition {
   status: string;
   diagnosedAt?: string | null;
   notes?: string | null;
+  createdAt?: string | null;
 }
 
 interface PatientEmergencyContact {
@@ -1231,6 +1232,9 @@ export default function PatientProfilePage() {
   const updateDiagnosis = useUpdateDiagnosis(id);
   // Lab report detail viewer.
   const [viewLab, setViewLab] = React.useState<LabReport | null>(null);
+  // Medical condition detail viewer.
+  const [viewCondition, setViewCondition] =
+    React.useState<PatientCondition | null>(null);
 
   // Patient data
   const { data: patient, isLoading: patientLoading } = useQuery({
@@ -1522,7 +1526,8 @@ export default function PatientProfilePage() {
                     {patient.conditions.map((c) => (
                       <li
                         key={c.id}
-                        className="flex items-center justify-between gap-3"
+                        className="flex items-center justify-between gap-3 cursor-pointer rounded-md px-1 transition-colors hover:bg-accent/30"
+                        onClick={() => setViewCondition(c)}
                       >
                         <div className="min-w-0">
                           <p className="text-sm text-muted-foreground truncate">
@@ -1539,47 +1544,61 @@ export default function PatientProfilePage() {
                             </p>
                           )}
                         </div>
-                        {canAddClinical ? (
-                          <Select
-                            value={c.status ?? 'ACTIVE'}
-                            onValueChange={(status) =>
-                              updateCondition.mutate(
-                                { conditionId: c.id, status },
-                                {
-                                  onSuccess: () =>
-                                    toast.success(
-                                      `${c.conditionName} marked ${status.toLowerCase()}.`,
-                                    ),
-                                  onError: (err) =>
-                                    toast.error(normalizeError(err).message),
-                                },
-                              )
-                            }
-                          >
-                            <SelectTrigger
-                              className="h-8 w-32 text-xs flex-shrink-0"
-                              aria-label={`Status for ${c.conditionName}`}
+                        <div
+                          className="flex items-center gap-1 flex-shrink-0"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {canAddClinical ? (
+                            <Select
+                              value={c.status ?? 'ACTIVE'}
+                              onValueChange={(status) =>
+                                updateCondition.mutate(
+                                  { conditionId: c.id, status },
+                                  {
+                                    onSuccess: () =>
+                                      toast.success(
+                                        `${c.conditionName} marked ${status.toLowerCase()}.`,
+                                      ),
+                                    onError: (err) =>
+                                      toast.error(normalizeError(err).message),
+                                  },
+                                )
+                              }
                             >
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {[
-                                'ACTIVE',
-                                'RESOLVED',
-                                'CHRONIC',
-                                'INACTIVE',
-                              ].map((s) => (
-                                <SelectItem key={s} value={s}>
-                                  {s}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : c.status && c.status !== 'ACTIVE' ? (
-                          <span className="text-xs opacity-70 flex-shrink-0">
-                            {c.status}
-                          </span>
-                        ) : null}
+                              <SelectTrigger
+                                className="h-8 w-32 text-xs flex-shrink-0"
+                                aria-label={`Status for ${c.conditionName}`}
+                              >
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {[
+                                  'ACTIVE',
+                                  'RESOLVED',
+                                  'CHRONIC',
+                                  'INACTIVE',
+                                ].map((s) => (
+                                  <SelectItem key={s} value={s}>
+                                    {s}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : c.status && c.status !== 'ACTIVE' ? (
+                            <span className="text-xs opacity-70 flex-shrink-0">
+                              {c.status}
+                            </span>
+                          ) : null}
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            aria-label={`View ${c.conditionName}`}
+                            onClick={() => setViewCondition(c)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -2327,6 +2346,87 @@ export default function PatientProfilePage() {
 
           <DialogFooter>
             <Button onClick={() => setViewLab(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Medical condition detail dialog ───────────────────────────── */}
+      <Dialog
+        open={!!viewCondition}
+        onOpenChange={(open) => {
+          if (!open) setViewCondition(null);
+        }}
+      >
+        <DialogContent size="sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Stethoscope className="h-4 w-4" />
+              {viewCondition?.conditionName ?? 'Medical Condition'}
+            </DialogTitle>
+            <DialogDescription>
+              {viewCondition?.conditionCode
+                ? `${viewCondition.conditionCode} · `
+                : ''}
+              Medical condition on this patient&apos;s record.
+            </DialogDescription>
+          </DialogHeader>
+
+          {viewCondition && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Status
+                  </p>
+                  <div className="mt-1">
+                    <StatusBadge status={viewCondition.status} />
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Diagnosed On
+                  </p>
+                  <p className="mt-1">
+                    {viewCondition.diagnosedAt
+                      ? formatDate(viewCondition.diagnosedAt, 'short')
+                      : '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Condition Code
+                  </p>
+                  <p className="mt-1 font-mono">
+                    {viewCondition.conditionCode ?? '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Recorded
+                  </p>
+                  <p className="mt-1">
+                    {viewCondition.createdAt
+                      ? formatDate(viewCondition.createdAt, 'short')
+                      : '—'}
+                  </p>
+                </div>
+              </div>
+
+              {viewCondition.notes && (
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">
+                    Notes
+                  </p>
+                  <p className="text-sm whitespace-pre-wrap">
+                    {viewCondition.notes}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button onClick={() => setViewCondition(null)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

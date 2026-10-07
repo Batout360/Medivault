@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Stethoscope, Plus, ClipboardList, Trash2, HeartPulse } from 'lucide-react';
+import { Stethoscope, Plus, ClipboardList, Trash2, HeartPulse, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -47,6 +47,15 @@ const SEVERITIES = ['MILD', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
 
 const CONDITION_STATUSES = ['ACTIVE', 'RESOLVED', 'CHRONIC', 'INACTIVE'] as const;
 
+const ALLERGY_TYPES = ['DRUG', 'FOOD', 'ENVIRONMENTAL', 'OTHER'] as const;
+
+const ALLERGY_SEVERITIES = [
+  'MILD',
+  'MODERATE',
+  'SEVERE',
+  'LIFE_THREATENING',
+] as const;
+
 const ENCOUNTER_TYPES = [
   'OUTPATIENT',
   'INPATIENT',
@@ -74,6 +83,14 @@ const conditionRowSchema = z.object({
   notes: z.string().max(2000).optional().or(z.literal('')),
 });
 
+const allergyRowSchema = z.object({
+  allergen: z.string().min(1, 'Allergen is required').max(200),
+  allergyType: z.string().optional().or(z.literal('')),
+  severity: z.string().optional().or(z.literal('')),
+  reaction: z.string().max(500).optional().or(z.literal('')),
+  notes: z.string().max(2000).optional().or(z.literal('')),
+});
+
 const diagnosisSchema = z.object({
   medicalRecordId: z
     .string()
@@ -85,6 +102,7 @@ const diagnosisSchema = z.object({
   status: z.string().optional().or(z.literal('')),
   notes: z.string().max(2000).optional().or(z.literal('')),
   conditions: z.array(conditionRowSchema),
+  allergies: z.array(allergyRowSchema),
 });
 
 type DiagnosisFormValues = z.infer<typeof diagnosisSchema>;
@@ -162,12 +180,18 @@ export default function NewDiagnosisPage() {
       diagnosisName: '',
       notes: '',
       conditions: [],
+      allergies: [],
     },
   });
 
   const conditionFields = useFieldArray({
     control,
     name: 'conditions',
+  });
+
+  const allergyFields = useFieldArray({
+    control,
+    name: 'allergies',
   });
 
   const encounterForm = useForm<EncounterFormValues>({
@@ -232,6 +256,15 @@ export default function NewDiagnosisPage() {
           : undefined,
         notes: c.notes?.trim() || undefined,
       }));
+      const allergies = values.allergies
+        .map((a) => ({
+          allergen: a.allergen.trim(),
+          allergyType: a.allergyType || undefined,
+          severity: a.severity || undefined,
+          reaction: a.reaction?.trim() || undefined,
+          notes: a.notes?.trim() || undefined,
+        }))
+        .filter((a) => a.allergen !== '');
       await createDiagnosis.mutateAsync({
         medicalRecordId: values.medicalRecordId,
         diagnosisCode: values.diagnosisCode || undefined,
@@ -241,6 +274,7 @@ export default function NewDiagnosisPage() {
         status: values.status || undefined,
         notes: values.notes || undefined,
         conditions: conditions.length > 0 ? conditions : undefined,
+        allergies: allergies.length > 0 ? allergies : undefined,
       });
       toast.success('Diagnosis added successfully.');
       router.push(`/patients/${id}`);
@@ -607,6 +641,132 @@ export default function NewDiagnosisPage() {
             >
               <Plus className="h-3.5 w-3.5" />
               Add Condition
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+              Allergies
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Record any allergies identified with this diagnosis. They are
+              saved to the patient&apos;s record and shown on the patient&apos;s
+              profile.
+            </p>
+
+            {allergyFields.fields.map((row, index) => {
+              const rowErrors = errors.allergies?.[index];
+              return (
+                <div
+                  key={row.id}
+                  className="rounded-lg border border-border p-4 space-y-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium">
+                      Allergy {index + 1}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => allergyFields.remove(index)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Remove
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="sm:col-span-2">
+                      <Input
+                        label="Allergen"
+                        placeholder="e.g. Penicillin"
+                        required
+                        error={rowErrors?.allergen?.message}
+                        {...register(`allergies.${index}.allergen`)}
+                      />
+                    </div>
+                    <Controller
+                      name={`allergies.${index}.allergyType`}
+                      control={control}
+                      render={({ field }) => (
+                        <LabeledSelect
+                          label="Allergy Type"
+                          placeholder="Select…"
+                          value={field.value ?? ''}
+                          onValueChange={field.onChange}
+                          hint="Optional"
+                        >
+                          {ALLERGY_TYPES.map((t) => (
+                            <SelectItem key={t} value={t}>
+                              {t}
+                            </SelectItem>
+                          ))}
+                        </LabeledSelect>
+                      )}
+                    />
+                    <Controller
+                      name={`allergies.${index}.severity`}
+                      control={control}
+                      render={({ field }) => (
+                        <LabeledSelect
+                          label="Severity"
+                          placeholder="Select…"
+                          value={field.value ?? ''}
+                          onValueChange={field.onChange}
+                          hint="Optional"
+                        >
+                          {ALLERGY_SEVERITIES.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
+                          ))}
+                        </LabeledSelect>
+                      )}
+                    />
+                    <div className="sm:col-span-2">
+                      <Input
+                        label="Reaction"
+                        placeholder="e.g. Rash, anaphylaxis"
+                        hint="Optional"
+                        error={rowErrors?.reaction?.message}
+                        {...register(`allergies.${index}.reaction`)}
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <Textarea
+                        label="Notes"
+                        placeholder="Additional context…"
+                        hint="Optional"
+                        error={rowErrors?.notes?.message}
+                        {...register(`allergies.${index}.notes`)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                allergyFields.append({
+                  allergen: '',
+                  allergyType: '',
+                  severity: '',
+                  reaction: '',
+                  notes: '',
+                })
+              }
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add Allergy
             </Button>
           </CardContent>
         </Card>

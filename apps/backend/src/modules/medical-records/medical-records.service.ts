@@ -6,7 +6,12 @@ import { PATIENT_ROLES } from '@medivault/shared';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { paginate, PaginationDto, PaginatedResult } from '../../common/dto/pagination.dto';
 import { MedicalRecord, MedicalRecordDocument } from './schemas/medical-record.schema';
-import { Patient, PatientDocument, PatientCondition } from '../patients/schemas/patient.schema';
+import {
+  Patient,
+  PatientDocument,
+  PatientCondition,
+  PatientAllergy,
+} from '../patients/schemas/patient.schema';
 import { User, UserDocument } from '../users/schemas/user.schema';
 
 import { CreateEncounterDto, UpdateEncounterDto } from './dto/create-encounter.dto';
@@ -494,17 +499,34 @@ export class MedicalRecordsService {
         createdAt: now,
       }));
 
-    if (conditions.length > 0) {
+    const allergies = (dto.allergies ?? [])
+      .filter((a) => a.allergen?.trim())
+      .map<PatientAllergy>((a) => ({
+        id: uuidv4(),
+        allergen: a.allergen.trim(),
+        allergyType: a.allergyType?.trim() || null,
+        severity: a.severity?.trim() || null,
+        reaction: a.reaction?.trim() || null,
+        notes: a.notes?.trim() || null,
+        isActive: true,
+        createdAt: now,
+      }));
+
+    const pushOps: Record<string, unknown> = {};
+    if (conditions.length > 0) pushOps.conditions = { $each: conditions };
+    if (allergies.length > 0) pushOps.allergies = { $each: allergies };
+
+    if (Object.keys(pushOps).length > 0) {
       const pushResult = await this.patientModel.updateOne(
         { _id: patientId, organizationId: orgId },
         {
-          $push: { conditions: { $each: conditions } },
+          $push: pushOps,
           $set: { updatedAt: now },
         },
       );
       if (pushResult.matchedCount === 0) {
         this.logger.warn(
-          `Diagnosis ${id} saved but its conditions were not attached: patient ${patientId} not found in org ${orgId}.`,
+          `Diagnosis ${id} saved but its conditions/allergies were not attached: patient ${patientId} not found in org ${orgId}.`,
         );
       }
     }
@@ -524,6 +546,7 @@ export class MedicalRecordsService {
         patientId,
         medicalRecordId: dto.medicalRecordId,
         conditionsAdded: conditions.length,
+        allergiesAdded: allergies.length,
       },
     });
 

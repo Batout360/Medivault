@@ -9,7 +9,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { MedicalConditionDto } from '../../patients/dto/create-patient.dto';
+import { AllergyDto, MedicalConditionDto } from '../../patients/dto/create-patient.dto';
 
 export enum DiagnosisTypeEnum {
   PRIMARY = 'PRIMARY',
@@ -74,4 +74,15 @@ export class CreateDiagnosisDto {
   @ValidateNested({ each: true })
   @Type(() => MedicalConditionDto)
   conditions?: MedicalConditionDto[];
+
+  @ApiPropertyOptional({
+    type: [AllergyDto],
+    description: 'Allergies recorded alongside this diagnosis; pushed onto the patient record',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayNotEmpty()
+  @ValidateNested({ each: true })
+  @Type(() => AllergyDto)
+  allergies?: AllergyDto[];
 }
