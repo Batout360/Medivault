@@ -13,6 +13,8 @@ A production-grade Electronic Medical Records (EMR) system for hospitals and cli
 **Biometrics**: The development mode uses a mock biometric provider. Production deployments must integrate a certified biometric scanner SDK. See [Biometric Configuration](#biometric-configuration).
 
 ---
+link- https://medivault-xi-two.vercel.app/
+---
 
 ## Architecture
 
