@@ -11,13 +11,11 @@ import { User, UserDocument } from '../users/schemas/user.schema';
 
 import { CreateEncounterDto, UpdateEncounterDto } from './dto/create-encounter.dto';
 import { CreateDiagnosisDto } from './dto/create-diagnosis.dto';
+import { UpdateDiagnosisDto } from './dto/update-diagnosis.dto';
 import { CreateVitalDto } from './dto/create-vital.dto';
 import { CreateClinicalNoteDto } from './dto/create-clinical-note.dto';
 import { CreatePrescriptionDto } from './dto/create-prescription.dto';
-import {
-  EndPrescriptionDto,
-  UpdatePrescriptionDto,
-} from './dto/update-prescription.dto';
+import { EndPrescriptionDto, UpdatePrescriptionDto } from './dto/update-prescription.dto';
 import { CreateLabReportDto } from './dto/create-lab-report.dto';
 import { CreateImagingReportDto } from './dto/create-imaging-report.dto';
 import { CreateVaccinationDto } from './dto/create-vaccination.dto';
@@ -539,6 +537,75 @@ export class MedicalRecordsService {
       .lean()
       .exec();
     return this.withAuthors(records);
+  }
+
+  /**
+   * Loads a diagnosis, scoped to the patient and organisation so an id from
+   * another tenant can never be amended through a valid patientId.
+   */
+  private async verifyDiagnosisOwnership(
+    diagnosisId: string,
+    patientId: string,
+    orgId: string | null,
+  ): Promise<LeanRecord> {
+    const record = await this.medicalRecordModel
+      .findOne({
+        _id: diagnosisId,
+        patientId,
+        organizationId: orgId,
+        type: 'diagnosis',
+        deletedAt: null,
+      })
+      .lean()
+      .exec();
+    if (!record) throw new NotFoundException(`Diagnosis ${diagnosisId} not found.`);
+    return record;
+  }
+
+  /**
+   * Applies a partial edit to a diagnosis — amend the name, flip the status
+   * to RESOLVED, tighten the severity, etc. Only the keys present on the DTO
+   * are written, so editing one field never blanks the rest of the record.
+   */
+  async updateDiagnosis(
+    diagnosisId: string,
+    dto: UpdateDiagnosisDto,
+    patientId: string,
+    orgId: string | null,
+    requestingUser: RequestingUser,
+    ctx: RequestContext,
+  ): Promise<any> {
+    await this.verifyDiagnosisOwnership(diagnosisId, patientId, orgId);
+
+    const updates: Record<string, any> = { updatedAt: new Date() };
+
+    if (dto.diagnosisCode !== undefined) updates['data.diagnosisCode'] = dto.diagnosisCode;
+    if (dto.diagnosisName !== undefined) updates['data.diagnosisName'] = dto.diagnosisName;
+    if (dto.diagnosisType !== undefined) updates['data.diagnosisType'] = dto.diagnosisType;
+    if (dto.severity !== undefined) updates['data.severity'] = dto.severity;
+    if (dto.status !== undefined) updates['data.status'] = dto.status;
+    if (dto.notes !== undefined) updates['data.notes'] = dto.notes;
+    if (dto.diagnosedAt !== undefined) updates['data.diagnosedAt'] = new Date(dto.diagnosedAt);
+
+    await this.medicalRecordModel.updateOne({ _id: diagnosisId }, { $set: updates }).exec();
+
+    await this.auditLogs.log({
+      eventType: 'MEDICAL_RECORD_UPDATE',
+      userId: requestingUser.id,
+      organizationId: orgId,
+      resourceType: 'DIAGNOSIS',
+      resourceId: diagnosisId,
+      action: 'UPDATE_DIAGNOSIS',
+      result: 'success',
+      ipAddress: ctx.ip,
+      userAgent: ctx.userAgent,
+      requestId: ctx.requestId,
+      metadata: { patientId, changes: Object.keys(dto) },
+    });
+
+    const record = await this.verifyDiagnosisOwnership(diagnosisId, patientId, orgId);
+    const [withAuthor] = await this.withAuthors([record]);
+    return withAuthor;
   }
 
   // ── Vitals ─────────────────────────────────────────────────────────────────

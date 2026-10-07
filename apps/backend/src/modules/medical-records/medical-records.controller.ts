@@ -17,13 +17,11 @@ import { UserRole, PATIENT_ROLES } from '@medivault/shared';
 import { MedicalRecordsService, RequestingUser } from './medical-records.service';
 import { CreateEncounterDto, UpdateEncounterDto } from './dto/create-encounter.dto';
 import { CreateDiagnosisDto } from './dto/create-diagnosis.dto';
+import { UpdateDiagnosisDto } from './dto/update-diagnosis.dto';
 import { CreateVitalDto } from './dto/create-vital.dto';
 import { CreateClinicalNoteDto } from './dto/create-clinical-note.dto';
 import { CreatePrescriptionDto } from './dto/create-prescription.dto';
-import {
-  EndPrescriptionDto,
-  UpdatePrescriptionDto,
-} from './dto/update-prescription.dto';
+import { EndPrescriptionDto, UpdatePrescriptionDto } from './dto/update-prescription.dto';
 import { CreateLabReportDto } from './dto/create-lab-report.dto';
 import { CreateImagingReportDto } from './dto/create-imaging-report.dto';
 import { CreateVaccinationDto } from './dto/create-vaccination.dto';
@@ -200,6 +198,27 @@ export class MedicalRecordsController {
     @CurrentUser() user: AccessTokenPayload,
   ) {
     return this.medicalRecordsService.getDiagnoses(patientId, await this.orgIdFor(user, patientId));
+  }
+
+  @Patch('diagnoses/:diagnosisId')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.FACILITY_ADMIN, UserRole.DOCTOR)
+  @UseGuards(PatientAccessGuard)
+  @ApiOperation({ summary: 'Edit a diagnosis (name, status, severity, notes …)' })
+  async updateDiagnosis(
+    @Param('patientId', ParseUUIDPipe) patientId: string,
+    @Param('diagnosisId', ParseUUIDPipe) diagnosisId: string,
+    @Body() dto: UpdateDiagnosisDto,
+    @CurrentUser() user: AccessTokenPayload,
+    @Req() req: Request,
+  ): Promise<any> {
+    return this.medicalRecordsService.updateDiagnosis(
+      diagnosisId,
+      dto,
+      patientId,
+      await this.orgIdFor(user, patientId),
+      await this.reqUser(user, patientId),
+      this.ctx(req),
+    );
   }
 
   // ── Vitals ────────────────────────────────────────────────────────────────

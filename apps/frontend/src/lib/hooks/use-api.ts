@@ -23,6 +23,12 @@ export const queryKeys = {
   patients: (params?: object) => ['patients', params] as const,
   patient: (id: string) => ['patient', id] as const,
   patientDiagnoses: (id: string) => ['patient', id, 'diagnoses'] as const,
+  /**
+   * A single diagnosis, nested under the list for the same reason as
+   * `patientPrescription` — invalidating the list then refreshes the open one.
+   */
+  patientDiagnosis: (id: string, diagnosisId: string) =>
+    ['patient', id, 'diagnoses', diagnosisId] as const,
   patientPrescriptions: (id: string) =>
     ['patient', id, 'prescriptions'] as const,
   /**
@@ -465,6 +471,25 @@ export function useUpdateCondition(patientId: string) {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.patient(patientId) });
+    },
+  });
+}
+
+/** Partial edit of an existing diagnosis — name, status (e.g. RESOLVED), severity, … */
+export function useUpdateDiagnosis(patientId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: object }) => {
+      const res = await apiClient.patch<DiagnosisRecord>(
+        `/patients/${patientId}/diagnoses/${id}`,
+        data,
+      );
+      return res.data;
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({
+        queryKey: queryKeys.patientDiagnoses(patientId),
+      });
     },
   });
 }

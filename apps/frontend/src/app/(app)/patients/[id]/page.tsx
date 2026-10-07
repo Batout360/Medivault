@@ -31,6 +31,7 @@ import {
   Copy,
   Ban,
   RotateCcw,
+  CheckCircle2,
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -71,6 +72,7 @@ import {
   useEndPrescription,
   useReactivatePrescription,
   useUpdateCondition,
+  useUpdateDiagnosis,
 } from '@/lib/hooks/use-api';
 import { UserRole } from '@medivault/shared';
 
@@ -1243,6 +1245,7 @@ export default function PatientProfilePage() {
   const endPrescription = useEndPrescription(id);
   const reactivatePrescription = useReactivatePrescription(id);
   const updateCondition = useUpdateCondition(id);
+  const updateDiagnosis = useUpdateDiagnosis(id);
 
   // Patient data
   const { data: patient, isLoading: patientLoading } = useQuery({
@@ -1786,9 +1789,56 @@ export default function PatientProfilePage() {
                             ` · Resolved ${formatDate(dx.resolvedAt, 'short')}`}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <SeverityBadge severity={dx.severity} />
-                        <StatusBadge status={dx.status} />
+                      <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-2">
+                          <SeverityBadge severity={dx.severity} />
+                          <StatusBadge status={dx.status} />
+                        </div>
+                        {canAddClinical && (
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              asChild
+                              aria-label={`Edit ${dx.name} diagnosis`}
+                            >
+                              <Link
+                                href={`/patients/${id}/diagnoses/${dx.id}/edit`}
+                              >
+                                <Edit className="h-3.5 w-3.5" />
+                                Edit
+                              </Link>
+                            </Button>
+                            {dx.status === 'ACTIVE' && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                aria-label={`Mark ${dx.name} diagnosis resolved`}
+                                loading={updateDiagnosis.isPending}
+                                onClick={() => {
+                                  updateDiagnosis
+                                    .mutateAsync({
+                                      id: dx.id,
+                                      data: { status: 'RESOLVED' },
+                                    })
+                                    .then(() =>
+                                      toast.success(
+                                        `${dx.name} marked as resolved.`,
+                                      ),
+                                    )
+                                    .catch((err: unknown) =>
+                                      toast.error(
+                                        `Failed: ${normalizeError(err).message}`,
+                                      ),
+                                    );
+                                }}
+                              >
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                Resolve
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardContent>
