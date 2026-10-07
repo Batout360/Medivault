@@ -49,6 +49,47 @@ export function formatDate(
 }
 
 /**
+ * Lab results are stored as a free-form object (`{ haemoglobin: '13.2' }`).
+ * Render a single measurement plainly and fall back to a compact listing so an
+ * object is never handed to React as a child.
+ */
+export function formatLabResult(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string') return value.trim() === '' ? null : value;
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>).filter(
+      ([, v]) => v !== null && v !== undefined && String(v).trim() !== '',
+    );
+    if (entries.length === 0) return null;
+    if (entries.length === 1) {
+      const [key, single] = entries[0];
+      const flat =
+        typeof single === 'object' && single !== null ? null : single;
+      return flat === null || flat === undefined
+        ? `${key}: ${JSON.stringify(single)}`
+        : `${key}: ${String(flat)}`;
+    }
+    return entries.map(([key, val]) => `${key}: ${String(val)}`).join(', ');
+  }
+  return String(value);
+}
+
+/**
+ * Split a stored `results` object into `{ name, value }` rows for display.
+ */
+export function labResultEntries(
+  value: unknown,
+): Array<{ name: string; value: string }> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
+  return Object.entries(value as Record<string, unknown>)
+    .filter(([, v]) => v !== null && v !== undefined && String(v).trim() !== '')
+    .map(([name, v]) => ({ name, value: String(v) }));
+}
+
+/**
  * Calculate age from a date of birth.
  */
 export function calculateAge(dob: Date | string | null | undefined): string {

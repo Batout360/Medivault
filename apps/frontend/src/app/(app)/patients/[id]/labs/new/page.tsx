@@ -2,10 +2,10 @@
 
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { FlaskConical, CalendarClock } from 'lucide-react';
+import { FlaskConical, CalendarClock, BarChart3, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +31,11 @@ const CAN_WRITE_ROLES = new Set<string>([
 ]);
 
 // ─── Validation ───────────────────────────────────────────────────────────────
+const resultRowSchema = z.object({
+  name: z.string().trim().min(1, 'Measurement name is required').max(100),
+  value: z.string().trim().min(1, 'Value is required').max(200),
+});
+
 const labSchema = z.object({
   testName: z.string().min(2, 'Test name is required').max(200),
   testCode: z.string().max(50).optional().or(z.literal('')),
@@ -41,6 +46,7 @@ const labSchema = z.object({
   reportDate: z.string().optional().or(z.literal('')),
   notes: z.string().max(2000).optional().or(z.literal('')),
   medicalRecordId: z.string().optional().or(z.literal('')),
+  results: z.array(resultRowSchema).optional(),
 });
 
 type LabFormValues = z.infer<typeof labSchema>;
@@ -88,12 +94,23 @@ export default function NewLabReportPage() {
       reportDate: '',
       notes: '',
       medicalRecordId: '',
+      results: [],
     },
+  });
+
+  const resultFields = useFieldArray({
+    control,
+    name: 'results',
   });
 
   const encounters = encountersData?.data ?? [];
 
   const onSubmit = async (values: LabFormValues) => {
+    const results = Object.fromEntries(
+      (values.results ?? [])
+        .map((r) => [r.name.trim(), r.value.trim()] as const)
+        .filter(([name, value]) => name !== '' && value !== ''),
+    );
     try {
       await createLabReport.mutateAsync({
         medicalRecordId: values.medicalRecordId || undefined,
@@ -107,6 +124,7 @@ export default function NewLabReportPage() {
           ? new Date(`${values.reportDate}T23:59:59`).toISOString()
           : undefined,
         notes: values.notes || undefined,
+        results: Object.keys(results).length > 0 ? results : undefined,
       });
       toast.success('Lab report added successfully.');
       router.push(`/patients/${id}`);
@@ -202,6 +220,72 @@ export default function NewLabReportPage() {
                 error={errors.notes?.message}
                 {...register('notes')}
               />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                Results
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Record each measured value (e.g. haemoglobin 13.2). Saved
+                results are visible from the patient&apos;s Lab Reports tab.
+              </p>
+
+              {resultFields.fields.map((row, index) => {
+                const rowErrors = errors.results?.[index];
+                return (
+                  <div
+                    key={row.id}
+                    className="rounded-lg border border-border p-4 space-y-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">
+                        Result {index + 1}
+                      </p>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => resultFields.remove(index)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Remove
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input
+                        label="Measurement"
+                        placeholder="e.g. Haemoglobin"
+                        required
+                        error={rowErrors?.name?.message}
+                        {...register(`results.${index}.name`)}
+                      />
+                      <Input
+                        label="Value"
+                        placeholder="e.g. 13.2"
+                        required
+                        error={rowErrors?.value?.message}
+                        {...register(`results.${index}.value`)}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => resultFields.append({ name: '', value: '' })}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Result
+              </Button>
             </CardContent>
           </Card>
 

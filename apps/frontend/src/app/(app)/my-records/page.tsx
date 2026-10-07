@@ -413,11 +413,11 @@ function MyRecordsInner() {
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium">{lab.testName}</p>
                 <Badge variant={lab.status === 'completed' ? 'success' : 'warning'} dot>
-                  {lab.status}
+                  {lab.status ? lab.status.toUpperCase() : '—'}
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {formatDate(lab.reportDate ?? summary.recentLabReports[0]?.reportDate ?? new Date().toISOString(), 'short')}
+                {formatDate(lab.reportDate, 'short')}
                 {lab.interpretation ? ` · ${lab.interpretation}` : ''}
               </p>
             </div>

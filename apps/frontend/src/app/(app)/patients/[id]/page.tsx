@@ -65,6 +65,8 @@ import {
   formatDate,
   calculateAge,
   formatStaffName,
+  formatLabResult,
+  labResultEntries,
 } from '@/lib/utils';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import type { MedicalProfileCard as MedicalProfileCardData } from '@/lib/hooks/use-api';
@@ -225,12 +227,16 @@ interface LabReport {
   testName: string;
   testCode: string | null;
   result: string | null;
+  /** Per-measurement rows parsed out of the stored `results` object. */
+  resultEntries: Array<{ name: string; value: string }>;
   referenceRange: string | null;
   unit: string | null;
   status: string;
   orderedAt: string;
   resultAt: string | null;
   orderedBy: string;
+  labName: string | null;
+  interpretation: string | null;
   notes: string | null;
 }
 
@@ -270,32 +276,6 @@ function authorName(doc: MedicalRecordDoc): string {
 
 function num(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
-}
-
-/**
- * Lab results are stored as a free-form object (`{ haemoglobin: '13.2' }`).
- * Render a single measurement plainly and fall back to a compact JSON listing
- * so an object is never handed to React as a child.
- */
-function formatLabResult(value: unknown): string | null {
-  if (value === null || value === undefined) return null;
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value);
-  }
-  if (typeof value === 'object') {
-    const entries = Object.entries(value as Record<string, unknown>);
-    if (entries.length === 0) return null;
-    if (entries.length === 1) {
-      const [key, single] = entries[0];
-      const flat = typeof single === 'object' ? null : single;
-      return flat === null || flat === undefined
-        ? `${key}: ${JSON.stringify(single)}`
-        : `${key}: ${String(flat)}`;
-    }
-    return entries.map(([key, val]) => `${key}: ${String(val)}`).join(', ');
-  }
-  return String(value);
 }
 
 function toDiagnosis(doc: MedicalRecordDoc): Diagnosis {
@@ -356,12 +336,15 @@ function toLabReport(doc: MedicalRecordDoc): LabReport {
     testName: str(data.testName) ?? 'Lab test',
     testCode: str(data.testCode),
     result: formatLabResult(data.results),
+    resultEntries: labResultEntries(data.results),
     referenceRange: str(data.normalRange),
     unit: str(data.unit),
-    status: str(data.status) ?? 'COMPLETED',
+    status: (str(data.status) ?? 'COMPLETED').toUpperCase(),
     orderedAt: doc.createdAt ?? '',
     resultAt: str(data.reportDate),
     orderedBy: authorName(doc),
+    labName: str(data.labName),
+    interpretation: str(data.interpretation),
     notes: str(data.notes),
   };
 }
@@ -1246,6 +1229,8 @@ export default function PatientProfilePage() {
   const reactivatePrescription = useReactivatePrescription(id);
   const updateCondition = useUpdateCondition(id);
   const updateDiagnosis = useUpdateDiagnosis(id);
+  // Lab report detail viewer.
+  const [viewLab, setViewLab] = React.useState<LabReport | null>(null);
 
   // Patient data
   const { data: patient, isLoading: patientLoading } = useQuery({
@@ -2024,13 +2009,17 @@ export default function PatientProfilePage() {
                     <th className="py-2 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">
                       Date
                     </th>
+                    <th className="py-2 px-3 w-10">
+                      <span className="sr-only">View</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {labs.map((lab) => (
                     <tr
                       key={lab.id}
-                      className="hover:bg-accent/30 transition-colors"
+                      className="hover:bg-accent/30 transition-colors cursor-pointer"
+                      onClick={() => setViewLab(lab)}
                     >
                       <td className="py-3 px-3">
                         <p className="font-medium">{lab.testName}</p>
@@ -2054,13 +2043,31 @@ export default function PatientProfilePage() {
                         )}
                       </td>
                       <td className="py-3 px-3 text-muted-foreground text-xs">
-                        {lab.referenceRange ?? '—'}
+                        {lab.referenceRange
+                          ? lab.unit
+                            ? `${lab.referenceRange} ${lab.unit}`
+                            : lab.referenceRange
+                          : '—'}
                       </td>
                       <td className="py-3 px-3">
                         <StatusBadge status={lab.status} />
                       </td>
                       <td className="py-3 px-3 text-muted-foreground">
                         {formatDate(lab.resultAt ?? lab.orderedAt, 'short')}
+                      </td>
+                      <td className="py-3 px-3">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          aria-label={`View ${lab.testName}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewLab(lab);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -2185,6 +2192,141 @@ export default function PatientProfilePage() {
             >
               End Prescription
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Lab report detail dialog ──────────────────────────────────── */}
+      <Dialog
+        open={!!viewLab}
+        onOpenChange={(open) => {
+          if (!open) setViewLab(null);
+        }}
+      >
+        <DialogContent size="lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FlaskConical className="h-4 w-4" />
+              {viewLab?.testName ?? 'Lab Report'}
+            </DialogTitle>
+            <DialogDescription>
+              {viewLab?.testCode ? `${viewLab.testCode} · ` : ''}
+              Lab report saved to this patient&apos;s record.
+            </DialogDescription>
+          </DialogHeader>
+
+          {viewLab && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 text-sm">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Status
+                  </p>
+                  <div className="mt-1">
+                    <StatusBadge status={viewLab.status} />
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Ordered By
+                  </p>
+                  <p className="mt-1">{viewLab.orderedBy}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Lab
+                  </p>
+                  <p className="mt-1">{viewLab.labName ?? '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Report Date
+                  </p>
+                  <p className="mt-1">
+                    {formatDate(viewLab.resultAt ?? viewLab.orderedAt, 'short')}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Recorded
+                  </p>
+                  <p className="mt-1">
+                    {formatDate(viewLab.orderedAt, 'short')}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Unit
+                  </p>
+                  <p className="mt-1">{viewLab.unit ?? '—'}</p>
+                </div>
+                <div className="col-span-2 sm:col-span-3">
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Normal Range
+                  </p>
+                  <p className="mt-1">
+                    {viewLab.referenceRange
+                      ? viewLab.unit
+                        ? `${viewLab.referenceRange} ${viewLab.unit}`
+                        : viewLab.referenceRange
+                      : '—'}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">
+                  Results
+                </p>
+                {viewLab.resultEntries.length > 0 ? (
+                  <ul className="divide-y divide-border rounded-lg border border-border">
+                    {viewLab.resultEntries.map((entry) => (
+                      <li
+                        key={entry.name}
+                        className="flex items-center justify-between gap-4 px-3 py-2 text-sm"
+                      >
+                        <span>{entry.name}</span>
+                        <span className="font-semibold text-right">
+                          {entry.value}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : viewLab.result ? (
+                  <p className="text-sm font-semibold">{viewLab.result}</p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No results recorded for this report.
+                  </p>
+                )}
+              </div>
+
+              {viewLab.interpretation && (
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">
+                    Interpretation
+                  </p>
+                  <p className="text-sm whitespace-pre-wrap">
+                    {viewLab.interpretation}
+                  </p>
+                </div>
+              )}
+
+              {viewLab.notes && (
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">
+                    Notes
+                  </p>
+                  <p className="text-sm whitespace-pre-wrap">
+                    {viewLab.notes}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button onClick={() => setViewLab(null)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

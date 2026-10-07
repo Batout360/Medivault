@@ -1528,7 +1528,7 @@ export class MedicalRecordsService {
       _id: lab._id,
       testName: lab.data?.testName,
       status: lab.data?.status,
-      reportDate: lab.data?.reportDate,
+      reportDate: lab.data?.reportDate ?? lab.createdAt,
       interpretation: lab.data?.interpretation,
     });
 

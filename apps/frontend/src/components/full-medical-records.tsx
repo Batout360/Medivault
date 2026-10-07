@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { SkeletonCard } from '@/components/ui/skeleton';
 import { apiClient } from '@/lib/api/client';
-import { formatDate, formatStaffName } from '@/lib/utils';
+import { formatDate, formatStaffName, formatLabResult } from '@/lib/utils';
 
 // ─── Types (mirror GET /patients/:id/history) ──────────────────────────────────
 interface BaseHistoryRecord {
@@ -104,7 +104,7 @@ interface LabReportData {
   testName: string;
   testCode?: string | null;
   status?: string | null;
-  results?: string | null;
+  results?: unknown;
   normalRange?: string | null;
   unit?: string | null;
   interpretation?: string | null;
@@ -205,7 +205,7 @@ function StatusBadge({ status }: { status: string | null }) {
   );
   return (
     <Badge variant={key ?? 'gray'} dot>
-      {status ?? '—'}
+      {status ? status.toUpperCase() : '—'}
     </Badge>
   );
 }
@@ -607,17 +607,21 @@ export function FullMedicalRecords({ patientId }: { patientId?: string }) {
                             )}
                           </td>
                           <td className="py-3 px-3">
-                            {lab.data.results ? (
-                              <span className="font-semibold">
-                                {lab.data.results}
-                                {lab.data.unit ? ` ${lab.data.unit}` : ''}
-                              </span>
-                            ) : (
-                              '—'
-                            )}
+                            {(() => {
+                              const formatted = formatLabResult(lab.data.results);
+                              return formatted ? (
+                                <span className="font-semibold">{formatted}</span>
+                              ) : (
+                                '—'
+                              );
+                            })()}
                           </td>
                           <td className="py-3 px-3 text-muted-foreground text-xs">
-                            {lab.data.normalRange ?? '—'}
+                            {lab.data.normalRange
+                              ? lab.data.unit
+                                ? `${lab.data.normalRange} ${lab.data.unit}`
+                                : lab.data.normalRange
+                              : '—'}
                           </td>
                           <td className="py-3 px-3">
                             <StatusBadge status={lab.data.status ?? null} />
