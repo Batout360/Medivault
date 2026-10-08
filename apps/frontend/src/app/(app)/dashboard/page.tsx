@@ -47,6 +47,7 @@ import { apiClient } from "@/lib/api/client";
 import {
   useGenerateMedicalQr,
   useRevokeMedicalQr,
+  queryKeys,
   type MedicalProfileCard,
 } from "@/lib/hooks/use-api";
 import { useAuthStore } from "@/lib/stores/auth.store";
@@ -480,7 +481,7 @@ function PatientQrModal({
   const isActive = card?.qr.status === "ACTIVE";
 
   const qrImage = useQuery({
-    queryKey: ["qr", "png", patientId],
+    queryKey: queryKeys.qrPng(patientId),
     queryFn: async () => {
       const res = await apiClient.get<Blob>(
         `/medical-profile/patients/${patientId}/qr.png`,

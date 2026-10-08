@@ -51,6 +51,8 @@ export const queryKeys = {
   medicalProfileCard: (id: string) => ['medical-profile', id] as const,
   medicalQrStatus: (id: string) =>
     ['medical-profile', id, 'qr-status'] as const,
+  /** Rasterized QR PNG — independent key so a regenerate must invalidate it explicitly. */
+  qrPng: (id: string) => ['qr', 'png', id] as const,
   publicProfile: (token: string) => ['public-profile', token] as const,
   emergencyProfile: (token: string) => ['emergency-profile', token] as const,
 
@@ -920,6 +922,9 @@ export function useGenerateMedicalQr(patientId: string) {
         queryKey: queryKeys.medicalProfileCard(patientId),
       });
       void qc.invalidateQueries({ queryKey: ['patient', patientId] });
+      // The rasterized QR encodes the old code — drop it so the next open
+      // refetches, otherwise the UI keeps serving a QR that no longer resolves.
+      void qc.invalidateQueries({ queryKey: queryKeys.qrPng(patientId) });
     },
   });
 }
@@ -937,6 +942,7 @@ export function useRevokeMedicalQr(patientId: string) {
       void qc.invalidateQueries({
         queryKey: queryKeys.medicalProfileCard(patientId),
       });
+      void qc.invalidateQueries({ queryKey: queryKeys.qrPng(patientId) });
     },
   });
 }
