@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-sidebar flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: 'hsl(221 39% 11%)' }}>
       {/* Subtle structural pattern — hospital cross motif at very low opacity */}
       <div
         className="absolute inset-0 opacity-[0.04]"

@@ -197,7 +197,7 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        "flex h-full flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300",
+        "flex h-full flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 shadow-sm",
         collapsed ? "w-16" : "w-64",
       )}
       aria-label="Main navigation"
@@ -219,6 +219,9 @@ export function Sidebar({
               priority
               className="h-7 w-auto drop-shadow-sm"
             />
+            <span className="text-sm font-bold text-sidebar-foreground tracking-tight">
+              Medivault
+            </span>
           </Link>
         )}
 

@@ -88,16 +88,15 @@
     --warning-amber-600: #d97706;
     --warning-amber-700: #b45309;
 
-    /* ── Sidebar (navigation panel) — always dark navy regardless of theme ── */
-    /* These values are also used by auth pages which intentionally stay dark  */
-    --sidebar-background: 221 39% 11%;  /* deep navy for medical authority */
-    --sidebar-foreground: 213 31% 91%;
-    --sidebar-primary: 221 83% 63%;
+    /* ── Sidebar (navigation panel) — light mode ────────────────────────── */
+    --sidebar-background: 0 0% 100%;        /* white */
+    --sidebar-foreground: 222 47% 11%;      /* slate-900 */
+    --sidebar-primary: 221 83% 53%;         /* medical-blue-600 */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 47% 18%;
-    --sidebar-accent-foreground: 213 31% 91%;
-    --sidebar-border: 222 47% 18%;
-    --sidebar-ring: 221 83% 63%;
+    --sidebar-accent: 214 32% 96%;          /* slate-100 */
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 214 32% 91%;          /* slate-200 */
+    --sidebar-ring: 221 83% 53%;
 
     /* ── Typography ──────────────────────────────────────────────────────── */
     --font-size-base: 16px;
@@ -143,14 +142,14 @@
     --status-discharged: 215 20% 55%;
     --status-deceased: 215 20% 75%;
 
-    --sidebar-background: 222 47% 4%;
+    --sidebar-background: 221 39% 11%;    /* deep navy for dark mode */
     --sidebar-foreground: 213 31% 91%;
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary: 221 83% 63%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 47% 10%;
+    --sidebar-accent: 222 47% 18%;
     --sidebar-accent-foreground: 213 31% 91%;
-    --sidebar-border: 222 47% 10%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-border: 222 47% 18%;
+    --sidebar-ring: 221 83% 63%;
   }
 }
 
