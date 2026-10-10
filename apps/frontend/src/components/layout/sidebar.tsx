@@ -217,7 +217,7 @@ export function Sidebar({
               width={1392}
               height={1130}
               priority
-              className="h-7 w-auto brightness-0 invert"
+              className="h-7 w-auto drop-shadow-sm"
             />
           </Link>
         )}

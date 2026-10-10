@@ -418,7 +418,7 @@ export default function RegisterPage() {
               width={1392}
               height={1130}
               priority
-              className="h-14 w-auto brightness-0 invert"
+              className="h-14 w-auto drop-shadow-sm"
             />
             <div className="text-center">
               <h1 className="text-xl font-bold text-sidebar-foreground">Create your account</h1>

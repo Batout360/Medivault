@@ -1419,7 +1419,7 @@ export default function PatientProfilePage() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Blood Group</p>
-                  <p className="text-sm font-bold text-red-600 dark:text-red-400">
+                  <p className="text-sm font-bold text-alert-red-600 dark:text-alert-red-400">
                     {displayBloodGroup(patient.bloodGroup)}
                   </p>
                 </div>
@@ -1457,12 +1457,12 @@ export default function PatientProfilePage() {
               {/* Allergies alert */}
               {patient.allergies?.length > 0 && (
                 <div className="flex items-start gap-2 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 px-3 py-2">
-                  <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="h-4 w-4 text-alert-red-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs font-semibold text-red-700 dark:text-red-400 uppercase tracking-wide">
+                    <p className="text-xs font-semibold text-alert-red-700 dark:text-alert-red-400 uppercase tracking-wide">
                       Allergies
                     </p>
-                    <p className="text-sm text-red-800 dark:text-red-300 mt-0.5">
+                    <p className="text-sm text-alert-red-800 dark:text-red-300 mt-0.5">
                       {patient.allergies
                         .filter((a) => a.isActive)
                         .map(
@@ -1647,7 +1647,7 @@ export default function PatientProfilePage() {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Heart className="h-3.5 w-3.5 text-red-500" />
+                  <Heart className="h-3.5 w-3.5 text-alert-red-500" />
                   Emergency Contact
                 </CardTitle>
               </CardHeader>

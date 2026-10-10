@@ -88,7 +88,8 @@
     --warning-amber-600: #d97706;
     --warning-amber-700: #b45309;
 
-    /* ── Sidebar (navigation panel) ──────────────────────────────────────── */
+    /* ── Sidebar (navigation panel) — always dark navy regardless of theme ── */
+    /* These values are also used by auth pages which intentionally stay dark  */
     --sidebar-background: 221 39% 11%;  /* deep navy for medical authority */
     --sidebar-foreground: 213 31% 91%;
     --sidebar-primary: 221 83% 63%;

@@ -62,7 +62,7 @@ export default function ForgotPasswordPage() {
               width={1392}
               height={1130}
               priority
-              className="h-14 w-auto brightness-0 invert"
+              className="h-14 w-auto drop-shadow-sm"
             />
             <p className="text-sm text-sidebar-foreground/60">Reset your password</p>
           </div>

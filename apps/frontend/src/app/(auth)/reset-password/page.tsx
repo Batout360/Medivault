@@ -89,7 +89,7 @@ function ResetPasswordContent() {
       <Card className="border-sidebar-border bg-sidebar-accent shadow-2xl">
         <CardHeader className="pb-4">
           <div className="flex flex-col items-center gap-3">
-            <Image src="/medivault-logo.png" alt="Medivault" width={1392} height={1130} priority className="h-14 w-auto brightness-0 invert" />
+            <Image src="/medivault-logo.png" alt="Medivault" width={1392} height={1130} priority className="h-14 w-auto drop-shadow-sm" />
             <p className="text-sm text-sidebar-foreground/60">Set a new password</p>
           </div>
         </CardHeader>

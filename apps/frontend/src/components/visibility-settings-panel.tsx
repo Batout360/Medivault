@@ -126,7 +126,7 @@ function VisibilityToggle({
       >
         <span
           className={`
-            pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-lg ring-0
+            pointer-events-none inline-block h-4 w-4 rounded-full bg-card shadow-lg ring-0
             transition duration-200 ease-in-out
             ${checked ? 'translate-x-4' : 'translate-x-0'}
           `}

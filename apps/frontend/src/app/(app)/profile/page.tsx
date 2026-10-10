@@ -900,14 +900,14 @@ function PatientProfileSection() {
         </div>
 
         {/* Identity details row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-6 py-4 bg-white dark:bg-zinc-900">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-6 py-4 bg-card">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">MRN</p>
             <p className="text-sm font-mono font-medium mt-0.5">{p.mrn}</p>
           </div>
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Blood Group</p>
-            <p className="text-sm font-bold text-red-600 dark:text-red-400 mt-0.5">{formatBloodGroup(p.bloodGroup)}</p>
+            <p className="text-sm font-bold text-alert-red-600 dark:text-alert-red-400 mt-0.5">{formatBloodGroup(p.bloodGroup)}</p>
           </div>
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Date of Birth</p>
@@ -936,7 +936,7 @@ function PatientProfileSection() {
               ) : medicalCard.qr.status === 'REVOKED' ? (
                 <>
                   <span className="h-2 w-2 rounded-full bg-red-500" />
-                  <span className="text-red-700 dark:text-red-400 font-medium">QR Revoked</span>
+                  <span className="text-alert-red-700 dark:text-alert-red-400 font-medium">QR Revoked</span>
                 </>
               ) : (
                 <>

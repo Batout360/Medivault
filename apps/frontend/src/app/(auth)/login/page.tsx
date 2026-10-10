@@ -125,7 +125,7 @@ function LoginForm() {
               width={1392}
               height={1130}
               priority
-              className="h-14 w-auto brightness-0 invert"
+              className="h-14 w-auto drop-shadow-sm"
             />
             <div className="text-center">
               <p className="text-sm text-sidebar-foreground/60 mt-0.5">

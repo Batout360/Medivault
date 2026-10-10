@@ -136,13 +136,13 @@ function PublicProfileView({ data }: { data: PublicProfileResult }) {
   return (
     <div className="space-y-5">
       {/* Identity header */}
-      <div className="rounded-2xl border border-border bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
+      <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
         {/* Top gradient strip */}
         <div className="h-2 bg-gradient-to-r from-cyan-600 to-teal-600" />
         <div className="px-6 py-6 flex flex-col sm:flex-row items-center sm:items-start gap-5">
           <div className="relative">
             <Avatar name={fullName ?? data.patient?.initials ?? 'P'} size="xl" />
-            <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-emerald-500 border-2 border-white dark:border-zinc-900 flex items-center justify-center">
+            <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-emerald-500 border-2 border-white dark:border-card flex items-center justify-center">
               <CheckCircle2 className="h-3.5 w-3.5 text-white" />
             </div>
           </div>
@@ -184,18 +184,18 @@ function PublicProfileView({ data }: { data: PublicProfileResult }) {
       {hasCritical && (
         <div className="rounded-2xl border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/10 p-5">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5 animate-pulse" />
+            <AlertTriangle className="h-5 w-5 text-alert-red-600 flex-shrink-0 mt-0.5 animate-pulse" />
             <div className="flex-1">
-              <p className="font-bold text-red-700 dark:text-red-400 uppercase tracking-wide text-sm">
+              <p className="font-bold text-alert-red-700 dark:text-alert-red-400 uppercase tracking-wide text-sm">
                 ⚠ Critical Allergies
               </p>
               <div className="mt-2 space-y-1">
                 {data.criticalAllergies.map((a, i) => (
                   <div key={i} className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-red-800 dark:text-red-300">{a.allergen}</span>
+                    <span className="font-semibold text-alert-red-800 dark:text-red-300">{a.allergen}</span>
                     <SeverityBadge severity={a.severity} />
                     {a.reaction && (
-                      <span className="text-sm text-red-700/80 dark:text-red-400/80">— {a.reaction}</span>
+                      <span className="text-sm text-alert-red-700/80 dark:text-red-400/80">— {a.reaction}</span>
                     )}
                   </div>
                 ))}
@@ -327,15 +327,15 @@ export default function VerifyPage() {
           <div className="rounded-2xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10 p-8 space-y-3">
             <div className="flex items-center gap-3">
               {data.status === 'REVOKED' ? (
-                <XCircle className="h-8 w-8 text-red-600 flex-shrink-0" />
+                <XCircle className="h-8 w-8 text-alert-red-600 flex-shrink-0" />
               ) : (
-                <QrCode className="h-8 w-8 text-red-600 flex-shrink-0" />
+                <QrCode className="h-8 w-8 text-alert-red-600 flex-shrink-0" />
               )}
               <div>
-                <p className="text-base font-semibold text-red-700 dark:text-red-400">
+                <p className="text-base font-semibold text-alert-red-700 dark:text-alert-red-400">
                   {data.status === 'REVOKED' ? 'This QR code has been revoked.' : 'Invalid QR code'}
                 </p>
-                <p className="text-sm text-red-700/80 dark:text-red-400/80">
+                <p className="text-sm text-alert-red-700/80 dark:text-red-400/80">
                   Ask the patient&apos;s care team for a current, active medical card.
                 </p>
               </div>
@@ -400,7 +400,7 @@ export default function VerifyPage() {
 
         {/* Unauthenticated — invite to sign in */}
         {data?.valid && !isAuthenticated && (
-          <div className="rounded-2xl border border-border bg-white dark:bg-zinc-900 p-6 space-y-4 text-center shadow-sm">
+          <div className="rounded-2xl border border-border bg-card p-6 space-y-4 text-center shadow-sm">
             <ShieldCheck className="h-8 w-8 text-teal-600 mx-auto" />
             <p className="text-base font-semibold">Request Medical Access</p>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
@@ -485,10 +485,10 @@ function EmergencyPanel({ token }: { token: string }) {
 
         {e.criticalAllergies.length > 0 && (
           <div className="rounded-xl bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-700 p-4">
-            <p className="text-xs font-bold text-red-700 dark:text-red-400 uppercase mb-2">⚠ Critical Allergies</p>
+            <p className="text-xs font-bold text-alert-red-700 dark:text-alert-red-400 uppercase mb-2">⚠ Critical Allergies</p>
             {e.criticalAllergies.map((a, i) => (
               <div key={i} className="flex items-center gap-2">
-                <span className="font-semibold text-red-800 dark:text-red-300">{a.allergen}</span>
+                <span className="font-semibold text-alert-red-800 dark:text-red-300">{a.allergen}</span>
                 {a.severity && <SeverityBadge severity={a.severity} />}
               </div>
             ))}
@@ -510,7 +510,7 @@ function EmergencyPanel({ token }: { token: string }) {
         )}
 
         {e.emergencyContact && (
-          <div className="rounded-xl bg-white dark:bg-zinc-900 border border-border p-3">
+          <div className="rounded-xl bg-card border border-border p-3">
             <p className="text-xs font-semibold uppercase text-muted-foreground mb-1">Emergency Contact</p>
             <p className="font-medium">{e.emergencyContact.name}</p>
             <p className="text-sm text-muted-foreground">{e.emergencyContact.relationship}</p>
