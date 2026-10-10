@@ -657,7 +657,7 @@ function PatientHome({
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">
-          {greeting}, {user?.firstName} 👋
+          {greeting}, {user?.firstName}
         </h1>
         <p className="text-sm text-muted-foreground mt-0.5">
           Your personal health dashboard
@@ -772,7 +772,7 @@ export default function DashboardPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold">
-                {greeting()}, {user?.firstName} 👋
+                {greeting()}, {user?.firstName}
               </h1>
               <p className="text-sm text-muted-foreground mt-0.5">
                 {new Date().toLocaleDateString("en-IN", {
