@@ -1164,7 +1164,7 @@ export default function AdminDocumentsPage() {
                           entry.result === 'SUCCESS'
                             ? 'border-primary bg-primary/20'
                             : entry.result === 'DENIED'
-                              ? 'border-amber-500 bg-amber-100 dark:bg-amber-900/30'
+                              ? 'border-warning-amber-500 bg-warning-amber-100 dark:bg-warning-amber-900/30'
                               : 'border-destructive bg-destructive/20',
                         )}
                       />

@@ -16,11 +16,11 @@ const badgeVariants = cva(
         outline:
           'border border-current',
         success:
-          'border-transparent bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+          'border-transparent bg-clinical-green-100 text-clinical-green-700 dark:bg-clinical-green-950 dark:text-clinical-green-400',
         warning:
-          'border-transparent bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+          'border-transparent bg-warning-amber-100 text-warning-amber-700 dark:bg-warning-amber-950 dark:text-warning-amber-400',
         info:
-          'border-transparent bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+          'border-transparent bg-medical-blue-100 text-medical-blue-700 dark:bg-medical-blue-950 dark:text-medical-blue-400',
         purple:
           'border-transparent bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
         gray:

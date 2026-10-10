@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
@@ -138,12 +138,12 @@ export default function PatientRegistrationPage() {
     onSuccess: (data) => {
       setCreatedPatientId(data.id);
       setCreatedLogin(data.login ?? null);
-      toast.success(`User registered successfully. ID: ${data.patientId}`);
+      toast.success(`Patient registered successfully. ID: ${data.patientId}`);
       setCurrentStep(5); // Go to biometric step
     },
     onError: (err: unknown) => {
       const message =
-        isErrorLike(err) ? err.message : 'Failed to register user.';
+        isErrorLike(err) ? err.message : 'Failed to register patient.';
       toast.error(message);
     },
   });
@@ -179,14 +179,14 @@ export default function PatientRegistrationPage() {
           variant="ghost"
           size="icon"
           onClick={() => router.push('/patients')}
-          aria-label="Back to users"
+          aria-label="Back to patients list"
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-xl font-bold">Register New User</h1>
+          <h1 className="text-xl font-bold">Register New Patient</h1>
           <p className="text-sm text-muted-foreground">
-            Create a new user profile in the system
+            Create a new patient profile in the system
           </p>
         </div>
       </div>
@@ -249,7 +249,7 @@ export default function PatientRegistrationPage() {
             <SectionHeading
               icon={User}
               title="Personal Information"
-              description="Basic identifying information about the user."
+              description="Basic identifying information about the patient."
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
@@ -330,7 +330,7 @@ export default function PatientRegistrationPage() {
             <SectionHeading
               icon={Phone}
               title="Contact Information"
-              description="How can the user be reached?"
+              description="How can the patient be reached?"
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
@@ -470,61 +470,61 @@ export default function PatientRegistrationPage() {
       {currentStep === 5 && createdPatientId && (
         <Card>
           <CardContent className="p-8 text-center space-y-6">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-100 dark:bg-violet-900/30">
-              <Fingerprint className="h-8 w-8 text-violet-600 dark:text-violet-400" />
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-xl bg-primary/10">
+              <Fingerprint className="h-8 w-8 text-primary" />
             </div>
             <div>
               <div className="flex items-center justify-center gap-2">
                 <h2 className="text-lg font-semibold">Fingerprint Enrollment</h2>
-                <span className="rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-violet-700 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-300">
+                <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
                   Optional
                 </span>
               </div>
               <p className="text-sm text-muted-foreground mt-1">
-                The user has been successfully registered. Enrolling a fingerprint
-                is optional — you can skip it and enroll later from the user&apos;s
+                The patient has been successfully registered. Enrolling a fingerprint
+                is optional — you can skip it and enroll later from the patient&apos;s
                 profile at any time.
               </p>
             </div>
 
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/10 p-4 text-left">
+            <div className="rounded-lg border border-clinical-green-200 bg-clinical-green-50 dark:border-clinical-green-800 dark:bg-clinical-green-950/20 p-4 text-left">
               <div className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-emerald-600" />
-                <span className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
-                  User registered successfully
+                <Check className="h-4 w-4 text-clinical-green-600" />
+                <span className="text-sm font-medium text-clinical-green-700 dark:text-clinical-green-400">
+                  Patient registered successfully
                 </span>
               </div>
-              <p className="text-xs text-emerald-600/80 dark:text-emerald-400/80 mt-1">
-                User ID has been generated and their record is now in the system.
+              <p className="text-xs text-clinical-green-600/80 dark:text-clinical-green-400/80 mt-1">
+                Patient ID has been generated and their record is now in the system.
               </p>
             </div>
 
             {createdLogin && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/10 p-4 text-left">
+              <div className="rounded-lg border border-warning-amber-200 bg-warning-amber-50 dark:border-warning-amber-800 dark:bg-warning-amber-950/20 p-4 text-left">
                 <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-amber-700 dark:text-amber-400" />
-                  <span className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                  <Mail className="h-4 w-4 text-warning-amber-700 dark:text-warning-amber-400" />
+                  <span className="text-sm font-medium text-warning-amber-700 dark:text-warning-amber-400">
                     Login created — save these credentials
                   </span>
                 </div>
-                <p className="text-xs text-amber-700/80 dark:text-amber-400/80 mt-1">
+                <p className="text-xs text-warning-amber-700/80 dark:text-warning-amber-400/80 mt-1">
                   A patient account was auto-created. Share the temporary password
                   with the patient; it is shown only once.
                 </p>
                 <dl className="mt-3 space-y-2 text-sm">
-                  <div className="flex items-center justify-between gap-4 rounded-md bg-white/60 dark:bg-background/40 px-3 py-2">
+                  <div className="flex items-center justify-between gap-4 rounded-md bg-background/60 px-3 py-2">
                     <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Email / Username
                     </dt>
-                    <dd className="font-mono text-amber-900 dark:text-amber-300">
+                    <dd className="font-mono text-warning-amber-900 dark:text-warning-amber-300">
                       {createdLogin.username}
                     </dd>
                   </div>
-                  <div className="flex items-center justify-between gap-4 rounded-md bg-white/60 dark:bg-background/40 px-3 py-2">
+                  <div className="flex items-center justify-between gap-4 rounded-md bg-background/60 px-3 py-2">
                     <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Temporary Password
                     </dt>
-                    <dd className="font-mono text-amber-900 dark:text-amber-300">
+                    <dd className="font-mono text-warning-amber-900 dark:text-warning-amber-300">
                       {createdLogin.temporaryPassword}
                     </dd>
                   </div>
@@ -591,7 +591,7 @@ export default function PatientRegistrationPage() {
           >
             {currentStep === 4 ? (
               <>
-                Register User
+                Register Patient
                 <Check className="h-4 w-4" />
               </>
             ) : (

@@ -54,7 +54,7 @@ export function Header({ onMenuClick, title }: HeaderProps) {
   const ThemeIcon = resolvedTheme === "dark" ? Moon : resolvedTheme === "light" ? Sun : Monitor;
 
   return (
-    <header className="sticky top-0 z-nav flex h-14 items-center border-b border-border bg-card/80 backdrop-blur-sm px-4 gap-4">
+    <header className="sticky top-0 z-nav flex h-14 items-center border-b border-border bg-background/90 backdrop-blur-sm px-4 gap-4">
       {/* Mobile menu button */}
       <button
         onClick={onMenuClick}
@@ -75,7 +75,7 @@ export function Header({ onMenuClick, title }: HeaderProps) {
           onSubmit={handleSearch}
           className="flex-1 max-w-md"
           role="search"
-          aria-label="Search users"
+          aria-label="Search patients"
         >
           <div className="relative">
             <Search
@@ -86,14 +86,14 @@ export function Header({ onMenuClick, title }: HeaderProps) {
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search users by name, ID, phone…"
+              placeholder="Search patients by name, ID, phone…"
               className={cn(
                 "h-8 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm",
                 "placeholder:text-muted-foreground",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                 "transition-colors",
               )}
-              aria-label="Search users"
+              aria-label="Search patients"
             />
           </div>
         </form>
@@ -143,13 +143,9 @@ export function Header({ onMenuClick, title }: HeaderProps) {
         {/* Notifications */}
         <button
           className="relative rounded-md p-2 hover:bg-accent transition-colors"
-          aria-label="Notifications (2 unread)"
+          aria-label="Notifications"
         >
           <Bell className="h-4 w-4" />
-          <span
-            className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary"
-            aria-hidden="true"
-          />
         </button>
 
         {/* User menu */}

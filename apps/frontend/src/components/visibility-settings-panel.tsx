@@ -121,7 +121,7 @@ function VisibilityToggle({
           relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent
           transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2
           focus-visible:ring-primary focus-visible:ring-offset-2 mt-0.5
-          ${checked ? 'bg-teal-600' : 'bg-muted-foreground/30'}
+          ${checked ? 'bg-primary' : 'bg-muted-foreground/30'}
         `}
       >
         <span
@@ -151,7 +151,7 @@ function VisibilityToggle({
         </div>
         <p className="text-xs text-muted-foreground mt-0.5">{field.description}</p>
         {field.alwaysPublicNote && (
-          <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
+          <p className="text-[11px] text-warning-amber-600 dark:text-warning-amber-400 mt-1 flex items-center gap-1">
             <AlertTriangle className="h-3 w-3 flex-shrink-0" />
             {field.alwaysPublicNote}
           </p>
@@ -241,8 +241,8 @@ export function VisibilitySettingsPanel({
         aria-expanded={collapsible ? open : undefined}
       >
         <div className="flex items-center gap-3">
-          <div className="rounded-lg bg-teal-100 dark:bg-teal-900/20 p-1.5">
-            <Lock className="h-4 w-4 text-teal-700 dark:text-teal-400" />
+          <div className="rounded-lg bg-primary/10 p-1.5">
+            <Lock className="h-4 w-4 text-primary" />
           </div>
           <div>
             <p className="text-sm font-semibold">Public Profile Visibility</p>
@@ -264,9 +264,9 @@ export function VisibilitySettingsPanel({
       {open && (
         <div className="p-5 space-y-4">
           {/* Security notice */}
-          <div className="flex items-start gap-3 rounded-xl bg-cyan-50 dark:bg-cyan-900/10 border border-cyan-200 dark:border-cyan-800 px-4 py-3">
-            <ShieldCheck className="h-4 w-4 text-cyan-700 dark:text-cyan-400 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-cyan-800 dark:text-cyan-300">
+          <div className="flex items-start gap-3 rounded-xl bg-primary/5 border border-primary/20 px-4 py-3">
+            <ShieldCheck className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-foreground/70">
               These settings control exactly what is shown to anyone who scans your QR code.{' '}
               <strong>Visibility is enforced on the server</strong> — hiding a field removes it
               completely from the public response, not just from the display.

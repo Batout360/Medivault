@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import * as React from 'react';
 import Image from 'next/image';
@@ -36,7 +36,7 @@ import { apiClient } from '@/lib/api/client';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import type { RegisterResponseDto } from '@medivault/shared';
 
-// ─── Types & builders ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Types & builders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface AllergyRow {
   allergen: string;
   allergyType: string;
@@ -97,10 +97,10 @@ const STEPS = [
   { key: 4, label: 'Review', icon: ClipboardList },
 ] as const;
 
-// ─── Validation schema ────────────────────────────────────────────────────────
+// â”€â”€â”€ Validation schema â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const registerSchema = z
   .object({
-    // Step 1 — account
+    // Step 1 â€” account
     firstName: z.string().min(1, 'First name is required').max(60),
     lastName: z.string().min(1, 'Last name is required').max(60),
     email: z
@@ -127,7 +127,7 @@ const registerSchema = z
       .min(8, 'Password must be at least 8 characters')
       .max(128, 'Password must not exceed 128 characters'),
     confirmPassword: z.string().min(1, 'Please confirm your password'),
-    // Step 2 — identity
+    // Step 2 â€” identity
     dob: z
       .string()
       .optional()
@@ -139,7 +139,7 @@ const registerSchema = z
     addrState: z.string().max(80).optional(),
     addrPostal: z.string().max(20).optional(),
     addrCountry: z.string().max(80).optional(),
-    // Step 3 — emergency contact (optional, name + relationship if any present)
+    // Step 3 â€” emergency contact (optional, name + relationship if any present)
     ecName: z.string().max(80).optional(),
     ecRelation: z.string().max(40).optional(),
     ecPhone: z
@@ -193,7 +193,7 @@ const STEP_3_FIELDS: (keyof RegisterFormValues)[] = [
   'ecPhone',
 ];
 
-// ─── Register Page ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Register Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function RegisterPage() {
   const router = useRouter();
   const [step, setStep] = React.useState(1);
@@ -239,11 +239,11 @@ export default function RegisterPage() {
   const strengthLabel = ['', 'Very weak', 'Weak', 'Fair', 'Strong', 'Very strong'][passwordStrength];
   const strengthColor = [
     '',
-    'bg-red-500',
-    'bg-orange-500',
-    'bg-yellow-500',
-    'bg-emerald-500',
-    'bg-green-500',
+    'bg-alert-red-500',
+    'bg-warning-amber-500',
+    'bg-warning-amber-400',
+    'bg-clinical-green-500',
+    'bg-clinical-green-600',
   ][passwordStrength];
 
   const goNext = async () => {
@@ -401,15 +401,15 @@ export default function RegisterPage() {
     }
   };
 
-  // ── Onboarding success / identity issuance screen ─────────────────────────
+  // â”€â”€ Onboarding success / identity issuance screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (identity) {
     return <IdentityIssuedScreen identity={identity} onContinue={handleContinue} isContinuing={isContinuing} />;
   }
 
-  // ── Registration form ──────────────────────────────────────────────────────
+  // â”€â”€ Registration form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   return (
     <div className="w-full">
-      <Card className="border-white/10 bg-white/5 backdrop-blur-md shadow-2xl">
+      <Card className="border-sidebar-border bg-sidebar-accent shadow-2xl">
         <CardHeader className="pb-4">
           <div className="flex flex-col items-center gap-3">
             <Image
@@ -418,12 +418,12 @@ export default function RegisterPage() {
               width={1392}
               height={1130}
               priority
-              className="h-14 w-auto"
+              className="h-14 w-auto brightness-0 invert"
             />
             <div className="text-center">
-              <h1 className="text-xl font-bold text-white">Create your account</h1>
-              <p className="text-sm text-blue-200/70 mt-0.5">
-                Step {step} of 4 — {STEPS[step - 1].label}
+              <h1 className="text-xl font-bold text-sidebar-foreground">Create your account</h1>
+              <p className="text-sm text-sidebar-foreground/60 mt-0.5">
+                Step {step} of 4 â€” {STEPS[step - 1].label}
               </p>
             </div>
           </div>
@@ -443,16 +443,16 @@ export default function RegisterPage() {
                       <div
                         className={cn(
                           'h-0.5 flex-1 rounded-full transition-colors',
-                          index + 1 <= step ? 'bg-primary' : 'bg-white/10',
+                          index + 1 <= step ? 'bg-sidebar-primary' : 'bg-sidebar-border',
                         )}
                       />
                     )}
                     <div
                       className={cn(
                         'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border transition-all',
-                        isDone && 'border-primary bg-primary text-white',
+                        isDone && 'border-primary bg-primary text-primary-foreground',
                         isActive && 'border-primary/60 bg-primary/10 text-primary ring-2 ring-primary/30',
-                        !isDone && !isActive && 'border-white/10 bg-white/5 text-blue-300/40',
+                        !isDone && !isActive && 'border-sidebar-border bg-sidebar/60 text-sidebar-foreground/30',
                       )}
                     >
                       {isDone ? <CheckCircle2 className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
@@ -461,7 +461,7 @@ export default function RegisterPage() {
                 );
               })}
             </div>
-            <div className="mt-2 hidden sm:flex justify-between text-xs text-blue-300/50">
+            <div className="mt-2 hidden sm:flex justify-between text-xs text-sidebar-foreground/40">
               {STEPS.map((s) => (
                 <span key={s.key} className={cn(s.key === step && 'text-primary font-medium')}>
                   {s.label}
@@ -545,7 +545,7 @@ export default function RegisterPage() {
                     type="button"
                     variant="ghost"
                     onClick={() => setStep(3)}
-                    className="text-blue-200/70 hover:text-white"
+                    className="text-sidebar-foreground/60 hover:text-sidebar-foreground"
                   >
                     <ArrowLeft className="h-4 w-4" /> Back
                   </Button>
@@ -553,16 +553,16 @@ export default function RegisterPage() {
                     type="submit"
                     size="lg"
                     loading={isSubmitting}
-                    className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/20"
+                    className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg shadow-primary/20"
                   >
-                    {isSubmitting ? 'Creating your account…' : 'Create account & issue identity'}
+                    {isSubmitting ? 'Creating your accountâ€¦' : 'Create account & issue identity'}
                   </Button>
                 </div>
               </>
             )}
           </form>
 
-          <p className="mt-4 text-center text-sm text-blue-200/60">
+          <p className="mt-4 text-center text-sm text-sidebar-foreground/50">
             Already have an account?{' '}
             <a
               href="/login"
@@ -572,7 +572,7 @@ export default function RegisterPage() {
             </a>
           </p>
 
-          <div className="mt-5 flex items-start gap-2 text-xs text-blue-300/50">
+          <div className="mt-5 flex items-start gap-2 text-xs text-sidebar-foreground/40">
             <Shield className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
             <p>
               By creating an account, you agree that all activity in this system is logged and
@@ -583,8 +583,8 @@ export default function RegisterPage() {
         </CardContent>
       </Card>
 
-      <p className="mt-4 text-center text-xs text-blue-300/30">
-        © {new Date().getFullYear()} Medivault. All rights reserved.
+      <p className="mt-4 text-center text-xs text-sidebar-foreground/30">
+        Â© {new Date().getFullYear()} Medivault. All rights reserved.
       </p>
     </div>
   );
@@ -595,7 +595,7 @@ export default function RegisterPage() {
   }
 }
 
-// ─── Step 1: Account ──────────────────────────────────────────────────────────
+// â”€â”€â”€ Step 1: Account â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function AccountStep({
   register: reg,
   errors,
@@ -679,13 +679,13 @@ function AccountStep({
                   key={i}
                   className={cn(
                     'h-1 flex-1 rounded-full transition-colors',
-                    i <= passwordStrength ? strengthColor : 'bg-white/10',
+                    i <= passwordStrength ? strengthColor : 'bg-sidebar-border',
                   )}
                 />
               ))}
             </div>
-            <p className="text-xs text-blue-300/50">
-              Strength: <span className="text-blue-200/70">{strengthLabel}</span>
+            <p className="text-xs text-sidebar-foreground/40">
+              Strength: <span className="text-sidebar-foreground/60">{strengthLabel}</span>
             </p>
           </div>
         )}
@@ -706,7 +706,7 @@ function AccountStep({
   );
 }
 
-// ─── Step 2: Identity ──────────────────────────────────────────────────────────
+// â”€â”€â”€ Step 2: Identity â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function IdentityStep({
   register: reg,
   errors,
@@ -717,7 +717,7 @@ function IdentityStep({
   const err = (key: string) => errors[key]?.message;
   return (
     <div className="space-y-4">
-      <div className="text-xs text-blue-300/50 -mt-1">
+      <div className="text-xs text-sidebar-foreground/40 -mt-1">
         This details block creates your medical identity and is what shows on your digital health card.
       </div>
 
@@ -743,8 +743,8 @@ function IdentityStep({
         </SelectInput>
       </Field>
 
-      <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
-        <div className="text-sm font-medium text-blue-100 mb-2">Address <span className="text-blue-300/40 font-normal">(optional)</span></div>
+      <div className="rounded-lg border border-sidebar-border bg-sidebar/60 p-3">
+        <div className="text-sm font-medium text-sidebar-foreground mb-2">Address <span className="text-sidebar-foreground/40 font-normal">(optional)</span></div>
         <div className="space-y-3">
           <Field label="Line 1" htmlFor="addrLine1">
             <InputWithoutIcon id="addrLine1" placeholder="12, MG Road" {...reg('addrLine1')} error={err('addrLine1')} />
@@ -771,7 +771,7 @@ function IdentityStep({
   );
 }
 
-// ─── Step 3: Health & emergency ────────────────────────────────────────────────
+// â”€â”€â”€ Step 3: Health & emergency â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function HealthStep({
   register: reg,
   errors,
@@ -803,10 +803,10 @@ function HealthStep({
       {rootError && <RootError message={rootError} />}
 
       {/* Emergency contact */}
-      <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
-        <div className="flex items-center gap-2 text-sm font-medium text-blue-100 mb-2">
+      <div className="rounded-lg border border-sidebar-border bg-sidebar/60 p-3">
+        <div className="flex items-center gap-2 text-sm font-medium text-sidebar-foreground mb-2">
           <Contact className="h-4 w-4 text-primary" />
-          Emergency contact <span className="text-blue-300/40 font-normal">(optional)</span>
+          Emergency contact <span className="text-sidebar-foreground/40 font-normal">(optional)</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Field label="Name" htmlFor="ecName">
@@ -825,19 +825,19 @@ function HealthStep({
       </div>
 
       {/* Allergies */}
-      <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
+      <div className="rounded-lg border border-sidebar-border bg-sidebar/60 p-3">
         <div className="flex items-center justify-between gap-2 mb-2">
-          <div className="text-sm font-medium text-blue-100">Allergies <span className="text-blue-300/40 font-normal">(optional)</span></div>
+          <div className="text-sm font-medium text-sidebar-foreground">Allergies <span className="text-sidebar-foreground/40 font-normal">(optional)</span></div>
           <Button type="button" variant="outline" size="sm" onClick={onAddAllergy}>
             <Plus className="h-4 w-4" /> Add allergy
           </Button>
         </div>
         {allergies.length === 0 ? (
-          <p className="text-xs text-blue-300/40">No allergies recorded. Add drug, food or environmental allergies if any.</p>
+          <p className="text-xs text-sidebar-foreground/40">No allergies recorded. Add drug, food or environmental allergies if any.</p>
         ) : (
           <div className="space-y-2">
             {allergies.map((row, index) => (
-              <div key={index} className="rounded-md border border-white/10 bg-white/[0.03] p-2">
+              <div key={index} className="rounded-md border border-sidebar-border bg-sidebar/60 p-2">
                 <div className="flex items-center gap-2 mb-2">
                   <InputWithoutIcon
                     aria-label={`Allergen ${index + 1}`}
@@ -878,19 +878,19 @@ function HealthStep({
       </div>
 
       {/* Conditions */}
-      <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3">
+      <div className="rounded-lg border border-sidebar-border bg-sidebar/60 p-3">
         <div className="flex items-center justify-between gap-2 mb-2">
-          <div className="text-sm font-medium text-blue-100">Ongoing conditions <span className="text-blue-300/40 font-normal">(optional)</span></div>
+          <div className="text-sm font-medium text-sidebar-foreground">Ongoing conditions <span className="text-sidebar-foreground/40 font-normal">(optional)</span></div>
           <Button type="button" variant="outline" size="sm" onClick={onAddCondition}>
             <Plus className="h-4 w-4" /> Add condition
           </Button>
         </div>
         {conditions.length === 0 ? (
-          <p className="text-xs text-blue-300/40">No conditions recorded.</p>
+          <p className="text-xs text-sidebar-foreground/40">No conditions recorded.</p>
         ) : (
           <div className="space-y-2">
             {conditions.map((row, index) => (
-              <div key={index} className="rounded-md border border-white/10 bg-white/[0.03] p-2">
+              <div key={index} className="rounded-md border border-sidebar-border bg-sidebar/60 p-2">
                 <div className="flex items-center gap-2 mb-2">
                   <InputWithoutIcon
                     aria-label={`Condition ${index + 1}`}
@@ -925,7 +925,7 @@ function HealthStep({
   );
 }
 
-// ─── Step 4: Review ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Step 4: Review â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ReviewStep({
   values,
   allergies,
@@ -943,7 +943,7 @@ function ReviewStep({
   return (
     <div className="space-y-4">
       {rootError && <RootError message={rootError} />}
-      <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3 text-sm">
+      <div className="rounded-lg border border-sidebar-border bg-sidebar/60 p-3 text-sm">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <ReviewItem label="Name" value={initialEmail.firstName && initialEmail.lastName ? `${initialEmail.firstName} ${initialEmail.lastName}` : ''} />
           <ReviewItem label="Email" value={initialEmail.email} />
@@ -956,25 +956,25 @@ function ReviewStep({
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3 text-sm">
-          <div className="text-blue-100 font-medium mb-1 flex items-center gap-1.5">
+        <div className="rounded-lg border border-sidebar-border bg-sidebar/60 p-3 text-sm">
+          <div className="text-sidebar-foreground font-medium mb-1 flex items-center gap-1.5">
             <Contact className="h-4 w-4 text-primary" /> Allergies
           </div>
-          <p className="text-blue-200/60 text-xs">{allergies.length || 'None recorded'}</p>
+          <p className="text-sidebar-foreground/50 text-xs">{allergies.length || 'None recorded'}</p>
         </div>
-        <div className="rounded-lg border border-white/10 bg-white/[0.02] p-3 text-sm">
-          <div className="text-blue-100 font-medium mb-1 flex items-center gap-1.5">
+        <div className="rounded-lg border border-sidebar-border bg-sidebar/60 p-3 text-sm">
+          <div className="text-sidebar-foreground font-medium mb-1 flex items-center gap-1.5">
             <HeartPulse className="h-4 w-4 text-primary" /> Conditions
           </div>
-          <p className="text-blue-200/60 text-xs">{conditions.length || 'None recorded'}</p>
+          <p className="text-sidebar-foreground/50 text-xs">{conditions.length || 'None recorded'}</p>
         </div>
       </div>
 
-      <div className="flex items-start gap-2 text-xs text-blue-300/50 rounded-lg border border-primary/20 bg-primary/5 p-3">
+      <div className="flex items-start gap-2 text-xs text-sidebar-foreground/40 rounded-lg border border-primary/20 bg-primary/5 p-3">
         <Shield className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
         <p>
           On creation you will receive your MediVault Patient ID (format MV-YYYY-NNNNNN) and a QR
-          health card. Keep the card safe — it can save your life in an emergency.
+          health card. Keep the card safe â€” it can save your life in an emergency.
         </p>
       </div>
     </div>
@@ -984,8 +984,8 @@ function ReviewStep({
 function ReviewItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-xs text-blue-300/50">{label}</div>
-      <div className="text-blue-50">{value || '—'}</div>
+      <div className="text-xs text-sidebar-foreground/40">{label}</div>
+      <div className="text-sidebar-foreground">{value || 'â€”'}</div>
     </div>
   );
 }
@@ -1006,7 +1006,7 @@ function displayAddress(values: RegisterFormValues): string {
   return parts.length ? parts.join(', ') : 'Not provided';
 }
 
-// ─── Step navigation ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Step navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function StepNav({
   isFirst = false,
   onBack,
@@ -1025,14 +1025,14 @@ function StepNav({
         variant="ghost"
         onClick={onBack}
         disabled={isFirst}
-        className={cn(isFirst && 'invisible', 'text-blue-200/70 hover:text-white')}
+        className={cn(isFirst && 'invisible', 'text-sidebar-foreground/60 hover:text-sidebar-foreground')}
       >
         <ArrowLeft className="h-4 w-4" /> Back
       </Button>
       <Button
         type="button"
         onClick={onNext}
-        className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/20"
+        className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 text-sidebar-foreground font-semibold shadow-lg shadow-primary/20"
       >
         {primaryLabel} {!isFirst && <ArrowRight className="h-4 w-4" />}
       </Button>
@@ -1040,7 +1040,7 @@ function StepNav({
   );
 }
 
-// ─── Reusable field building blocks ────────────────────────────────────────────
+// â”€â”€â”€ Reusable field building blocks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function Field({
   label,
   htmlFor,
@@ -1054,8 +1054,8 @@ function Field({
 }) {
   return (
     <div>
-      <label htmlFor={htmlFor} className="block text-sm font-medium text-blue-100 mb-1.5">
-        {label} {optional && <span className="text-blue-300/40 font-normal">(optional)</span>}
+      <label htmlFor={htmlFor} className="block text-sm font-medium text-sidebar-foreground mb-1.5">
+        {label} {optional && <span className="text-sidebar-foreground/40 font-normal">(optional)</span>}
       </label>
       {children}
     </div>
@@ -1107,9 +1107,9 @@ const IconInput = React.forwardRef<
 >(({ icon: Icon, prefixAt = false, error, className, ...props }, ref) => (
   <div className="relative">
     {prefixAt ? (
-      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-300/60 text-sm select-none pointer-events-none">@</span>
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sidebar-foreground/40 text-sm select-none pointer-events-none">@</span>
     ) : (
-      <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-300/60 pointer-events-none" aria-hidden="true" />
+      <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-sidebar-foreground/40 pointer-events-none" aria-hidden="true" />
     )}
     <input
       ref={ref}
@@ -1134,7 +1134,7 @@ const PasswordInput = React.forwardRef<
   }
 >(({ show, onToggle, error, className, ...props }, ref) => (
   <div className="relative">
-    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-300/60 pointer-events-none" aria-hidden="true" />
+    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-sidebar-foreground/40 pointer-events-none" aria-hidden="true" />
     <input
       ref={ref}
       {...props}
@@ -1149,7 +1149,7 @@ const PasswordInput = React.forwardRef<
     <button
       type="button"
       onClick={onToggle}
-      className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-300/60 hover:text-blue-300 transition-colors"
+      className="absolute right-3 top-1/2 -translate-y-1/2 text-sidebar-foreground/40 hover:text-sidebar-foreground transition-colors"
       aria-label={show ? 'Hide password' : 'Show password'}
     >
       {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -1163,7 +1163,7 @@ const CalendarInput = React.forwardRef<
   React.InputHTMLAttributes<HTMLInputElement> & { error?: string }
 >(({ error, className, ...props }, ref) => (
   <div className="relative">
-    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-300/60 pointer-events-none" aria-hidden="true" />
+    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-sidebar-foreground/40 pointer-events-none" aria-hidden="true" />
     <input
       ref={ref}
       {...props}
@@ -1171,7 +1171,7 @@ const CalendarInput = React.forwardRef<
       aria-invalid={!!error}
       className={cn(
         baseFieldClass(true),
-        'text-blue-100 [color-scheme:dark]',
+        'text-sidebar-foreground [color-scheme:dark]',
         error && 'border-destructive focus-visible:ring-destructive',
         className,
       )}
@@ -1191,20 +1191,20 @@ const SelectInput = React.forwardRef<
       defaultValue=""
       aria-invalid={!!error}
       className={cn(
-        'flex h-10 w-full appearance-none rounded-lg border bg-white/5 pl-3 pr-9 text-sm text-white',
+        'flex h-10 w-full appearance-none rounded-lg border bg-sidebar/60 pl-3 pr-9 text-sm text-sidebar-foreground',
         'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-        'border-white/10 hover:border-white/20',
-        '[&>option]:bg-slate-900 [&>option]:text-white',
+        'border-sidebar-border hover:border-sidebar-foreground/30',
+        '[&>option]:bg-sidebar [&>option]:text-sidebar-foreground',
         error && 'border-destructive focus-visible:ring-destructive',
         className,
       )}
     >
       <option value="" disabled>
-        {placeholder ?? 'Select…'}
+        {placeholder ?? 'Selectâ€¦'}
       </option>
       {children}
     </select>
-    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-300/60 pointer-events-none" aria-hidden="true" />
+    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-sidebar-foreground/40 pointer-events-none" aria-hidden="true" />
   </div>
 ));
 SelectInput.displayName = 'SelectInput';
@@ -1228,11 +1228,11 @@ function SelectInline({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       className={cn(
-        'h-9 w-full appearance-none rounded-md border bg-white/5 px-3 text-sm text-white',
+        'h-9 w-full appearance-none rounded-md border bg-sidebar/60 px-3 text-sm text-sidebar-foreground',
         'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-        'border-white/10 hover:border-white/20',
-        '[&>option]:bg-slate-900 [&>option]:text-white',
-        !value && 'text-blue-300/40',
+        'border-sidebar-border hover:border-sidebar-foreground/30',
+        '[&>option]:bg-sidebar [&>option]:text-sidebar-foreground',
+        !value && 'text-sidebar-foreground/40',
       )}
     >
       <option value="" disabled>{placeholder}</option>
@@ -1245,15 +1245,15 @@ function SelectInline({
 
 function baseFieldClass(withIcon = false): string {
   return cn(
-    'flex h-10 w-full rounded-lg border bg-white/5 text-sm text-white',
+    'flex h-10 w-full rounded-lg border bg-sidebar/60 text-sm text-sidebar-foreground',
     withIcon ? 'pl-10 pr-4' : 'px-3',
-    'placeholder:text-blue-300/30',
+    'placeholder:text-sidebar-foreground/30',
     'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-    'border-white/10 hover:border-white/20',
+    'border-sidebar-border hover:border-sidebar-foreground/30',
   );
 }
 
-// ─── Onboarding success screen ─────────────────────────────────────────────────
+// â”€â”€â”€ Onboarding success screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function IdentityIssuedScreen({
   identity,
   onContinue,
@@ -1265,21 +1265,21 @@ function IdentityIssuedScreen({
 }) {
   return (
     <div className="w-full">
-      <Card className="border-white/10 bg-white/5 backdrop-blur-md shadow-2xl">
+      <Card className="border-sidebar-border bg-sidebar-accent shadow-2xl">
         <CardContent className="pt-8 pb-8 flex flex-col items-center gap-5 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20 ring-1 ring-emerald-500/40">
-            <CheckCircle2 className="h-8 w-8 text-emerald-400" />
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-clinical-green-900/30 ring-1 ring-clinical-green-600/40">
+            <CheckCircle2 className="h-8 w-8 text-clinical-green-400" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white">Your MediVault identity is ready</h2>
-            <p className="mt-1 text-sm text-blue-200/70">
+            <h2 className="text-xl font-bold text-sidebar-foreground">Your MediVault identity is ready</h2>
+            <p className="mt-1 text-sm text-sidebar-foreground/60">
               Save or screenshot your health card before continuing.
             </p>
           </div>
 
           {/* Identity card */}
-          <div className="w-full max-w-sm rounded-2xl bg-gradient-to-br from-blue-700 via-blue-800 to-slate-900 p-[1px]">
-            <div className="relative rounded-2xl bg-gradient-to-br from-blue-800/90 to-slate-900 p-5 overflow-hidden">
+          <div className="w-full max-w-sm rounded-2xl bg-gradient-to-br from-medical-blue-700 via-medical-blue-800 to-medical-blue-950 p-[1px]">
+            <div className="relative rounded-2xl bg-gradient-to-br from-medical-blue-800/90 to-medical-blue-950 p-5 overflow-hidden">
               <div
                 className="absolute inset-0 opacity-[0.06]"
                 style={{
@@ -1297,29 +1297,29 @@ function IdentityIssuedScreen({
                     unoptimized
                     className="h-8 w-8 object-contain drop-shadow"
                   />
-                  <span className="text-sm font-semibold tracking-wide text-white">MEDIVAULT</span>
+                  <span className="text-sm font-semibold tracking-wide text-sidebar-foreground">MEDIVAULT</span>
                 </div>
-                <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-[10px] font-medium tracking-wider text-blue-100">
+                <span className="rounded-full bg-medical-blue-700/60 px-2.5 py-0.5 text-[10px] font-medium tracking-wider text-sidebar-foreground">
                   HEALTH CARD
                 </span>
               </div>
 
               <div className="relative mt-5 text-left">
-                <p className="text-2xl font-bold tracking-widest text-white font-mono drop-shadow">
+                <p className="text-2xl font-bold tracking-widest text-sidebar-foreground font-mono drop-shadow">
                   {identity.patientId}
                 </p>
-                <p className="mt-0.5 text-xs text-blue-200/70">
-                  {identity.profileId} · {identity.mvId}
+                <p className="mt-0.5 text-xs text-sidebar-foreground/60">
+                  {identity.profileId} Â· {identity.mvId}
                 </p>
-                <p className="mt-3 text-sm text-blue-100">
-                  Patient ID issued · {new Date().getFullYear()}
+                <p className="mt-3 text-sm text-sidebar-foreground">
+                  Patient ID issued Â· {new Date().getFullYear()}
                 </p>
               </div>
 
               <div className="relative mt-5 flex items-center justify-between gap-4">
                 <div className="text-left">
-                  <div className="text-[10px] uppercase tracking-widest text-blue-200/60">Scan to verify</div>
-                  <div className="text-xs text-blue-100/80 max-w-[130px]">
+                  <div className="text-[10px] uppercase tracking-widest text-sidebar-foreground/50">Scan to verify</div>
+                  <div className="text-xs text-sidebar-foreground/80 max-w-[130px]">
                     Emergency access to critical allergies & contacts
                   </div>
                 </div>
@@ -1341,7 +1341,7 @@ function IdentityIssuedScreen({
             <a
               href={identity.qr.qrDataUrl}
               download="medivault-health-card-qr.png"
-              className="inline-flex h-10 items-center justify-center rounded-lg border border-white/15 text-sm font-medium text-blue-100 hover:bg-white/5 transition-colors"
+              className="inline-flex h-10 items-center justify-center rounded-lg border border-sidebar-border text-sm font-medium text-sidebar-foreground hover:bg-sidebar/60 transition-colors"
             >
               Download QR code
             </a>
@@ -1349,27 +1349,28 @@ function IdentityIssuedScreen({
               size="lg"
               loading={isContinuing}
               onClick={() => void onContinue()}
-              className="w-full bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/20"
+              className="w-full bg-primary hover:bg-primary/90 text-sidebar-foreground font-semibold shadow-lg shadow-primary/20"
             >
-              {isContinuing ? 'Signing you in…' : 'Continue to dashboard'}
+              {isContinuing ? 'Signing you inâ€¦' : 'Continue to dashboard'}
             </Button>
           </div>
 
-          <p className="text-xs text-blue-300/50 max-w-sm">
+          <p className="text-xs text-sidebar-foreground/40 max-w-sm">
             We have signed you in automatically. You can view, rotate or revoke this QR at any time
             from your dashboard.
           </p>
         </CardContent>
       </Card>
 
-      <p className="mt-4 text-center text-xs text-blue-300/30">
-        © {new Date().getFullYear()} Medivault. All rights reserved.
+      <p className="mt-4 text-center text-xs text-sidebar-foreground/30">
+        Â© {new Date().getFullYear()} Medivault. All rights reserved.
       </p>
     </div>
   );
 }
 
-// ─── Style helpers ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Style helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function isErrorLike(err: unknown): err is { message: string } {
   return typeof err === 'object' && err !== null && 'message' in err;
 }
+

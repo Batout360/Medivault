@@ -506,17 +506,17 @@ function StaffProfileCard({ profile }: { profile: UserProfile }) {
         className="rounded-2xl border border-border shadow-sm overflow-hidden"
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-cyan-800 to-teal-800 text-white px-6 py-5 flex items-center justify-between gap-4">
+        <div className="bg-gradient-to-r from-medical-blue-900 to-medical-blue-700 text-white px-6 py-5 flex items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold tracking-[0.25em] uppercase text-cyan-100/80">
+            <p className="text-xs font-semibold tracking-[0.25em] uppercase text-medical-blue-200/80">
               Medivault · Staff Identity
             </p>
             <h2 className="text-xl font-bold mt-0.5">{fullName}</h2>
-            <p className="text-sm text-cyan-100/90 mt-0.5">
+            <p className="text-sm text-medical-blue-100/90 mt-0.5">
               {UserRoleLabels[profile.role] ?? profile.role}
             </p>
           </div>
-          <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
+          <div className="h-14 w-14 rounded-full bg-medical-blue-700/40 flex items-center justify-center text-white font-bold text-xl flex-shrink-0">
             {fullName.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)}
           </div>
         </div>
@@ -832,7 +832,7 @@ function PatientProfileSection() {
             <ClipboardList className="h-8 w-8 text-muted-foreground/40" />
             <p className="text-sm font-medium">No user profile linked</p>
             <p className="text-sm text-muted-foreground max-w-md">
-              Your account is not linked to a user record yet. Contact your
+              Your account is not linked to a patient record yet. Contact your
               healthcare provider to link your profile.
             </p>
           </CardContent>
@@ -872,10 +872,10 @@ function PatientProfileSection() {
       {/* ─── MediVault Identity banner ────────────────────────────────── */}
       <div className="rounded-2xl border border-border overflow-hidden shadow-sm">
         {/* Gradient header */}
-        <div className="bg-gradient-to-r from-cyan-800 to-teal-700 px-6 py-4 text-white">
+        <div className="bg-gradient-to-r from-medical-blue-900 to-medical-blue-700 px-6 py-4 text-white">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-cyan-100/80">
+              <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-medical-blue-200/80">
                 Medivault · Patient Identity
               </p>
               <p className="text-xl font-bold mt-0.5">
@@ -885,7 +885,7 @@ function PatientProfileSection() {
             <div className="text-right">
               {mvId ? (
                 <div>
-                  <p className="text-[10px] font-medium uppercase tracking-widest text-cyan-200/70">
+                  <p className="text-[10px] font-medium uppercase tracking-widest text-medical-blue-200/70">
                     MediVault ID
                   </p>
                   <p className="text-2xl font-black font-mono tracking-widest text-white mt-0.5">
@@ -893,7 +893,7 @@ function PatientProfileSection() {
                   </p>
                 </div>
               ) : (
-                <p className="text-sm text-cyan-100/70">No ID assigned</p>
+                <p className="text-sm text-medical-blue-100/70">No ID assigned</p>
               )}
             </div>
           </div>

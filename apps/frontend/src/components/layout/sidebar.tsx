@@ -13,7 +13,7 @@ import {
   Shield,
   LogOut,
   ChevronLeft,
-  Stethoscope,
+  ScrollText,
   UserCircle,
   FileText,
   X,
@@ -60,7 +60,7 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    label: "Users",
+    label: "Patients",
     href: "/patients",
     icon: Users,
     roles: [
@@ -73,7 +73,7 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    label: "Register User",
+    label: "Register Patient",
     href: "/patients/new",
     icon: UserPlus,
     roles: [
@@ -107,7 +107,7 @@ const adminNavItems: NavItem[] = [
   {
     label: "Audit Logs",
     href: "/admin/audit-logs",
-    icon: Stethoscope,
+    icon: ScrollText,
     roles: [UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.FACILITY_ADMIN],
   },
 ];
@@ -133,10 +133,10 @@ function NavLink({
       href={item.href}
       onClick={onClick}
       className={cn(
-        "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150",
+        "group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors duration-150",
         isActive
-          ? "bg-primary text-primary-foreground shadow-sm"
-          : "text-muted-foreground hover:text-foreground hover:bg-accent",
+          ? "bg-sidebar-accent text-sidebar-primary"
+          : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60",
         collapsed && "justify-center px-2",
       )}
       title={collapsed ? item.label : undefined}
@@ -144,8 +144,8 @@ function NavLink({
     >
       <item.icon
         className={cn(
-          "h-4 w-4 flex-shrink-0 transition-transform group-hover:scale-110",
-          isActive && "text-primary-foreground",
+          "h-4 w-4 flex-shrink-0",
+          isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground",
         )}
         aria-hidden="true"
       />
@@ -197,7 +197,7 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        "flex h-full flex-col border-r border-border bg-card transition-all duration-300",
+        "flex h-full flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300",
         collapsed ? "w-16" : "w-64",
       )}
       aria-label="Main navigation"
@@ -205,7 +205,7 @@ export function Sidebar({
       {/* Logo */}
       <div
         className={cn(
-          "flex h-14 items-center border-b border-border px-3 flex-shrink-0",
+          "flex h-14 items-center border-b border-sidebar-border px-3 flex-shrink-0",
           collapsed ? "justify-center" : "justify-between",
         )}
       >
@@ -217,7 +217,7 @@ export function Sidebar({
               width={1392}
               height={1130}
               priority
-              className="h-7 w-auto"
+              className="h-7 w-auto brightness-0 invert"
             />
           </Link>
         )}
@@ -226,7 +226,7 @@ export function Sidebar({
         {mobile ? (
           <button
             onClick={onClose}
-            className="rounded-md p-1 hover:bg-accent transition-colors"
+            className="rounded-md p-1 text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
             aria-label="Close sidebar"
           >
             <X className="h-4 w-4" />
@@ -234,7 +234,7 @@ export function Sidebar({
         ) : (
           <button
             onClick={() => onCollapsedChange(!collapsed)}
-            className="rounded-md p-1 hover:bg-accent transition-colors"
+            className="rounded-md p-1 text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <ChevronLeft
@@ -261,11 +261,11 @@ export function Sidebar({
         {filteredAdminItems.length > 0 && (
           <>
             {!collapsed && (
-              <p className="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground/60">
+              <p className="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-widest text-sidebar-foreground/30">
                 Admin
               </p>
             )}
-            {collapsed && <div className="my-2 border-t border-border/50" />}
+            {collapsed && <div className="my-2 border-t border-sidebar-border/50" />}
             {filteredAdminItems.map((item) => (
               <NavLink
                 key={item.href}
@@ -279,19 +279,19 @@ export function Sidebar({
       </nav>
 
       {/* User section */}
-      <div className={cn("border-t border-border p-3", collapsed && "px-2")}>
+      <div className={cn("border-t border-sidebar-border p-3", collapsed && "px-2")}>
         {!collapsed && user ? (
-          <div className="flex items-center gap-3 rounded-lg p-2 hover:bg-accent transition-colors">
+          <div className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-sidebar-accent transition-colors">
             <Avatar
               name={`${user.firstName} ${user.lastName}`}
               src={user.avatarUrl}
               size="sm"
             />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">
+              <p className="text-sm font-medium text-sidebar-foreground truncate">
                 {user.firstName} {user.lastName}
               </p>
-              <p className="text-xs text-muted-foreground truncate capitalize">
+              <p className="text-xs text-sidebar-foreground/50 truncate capitalize">
                 {user.role.toLowerCase().replace("_", " ")}
               </p>
             </div>
@@ -311,14 +311,14 @@ export function Sidebar({
         <button
           onClick={() => void handleLogout()}
           className={cn(
-            "mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium",
-            "text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors",
+            "mt-1 flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium",
+            "text-sidebar-foreground/50 hover:text-alert-red-400 hover:bg-alert-red-950/30 transition-colors",
             collapsed && "justify-center px-2",
           )}
           aria-label="Logout"
         >
           <LogOut className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
-          {!collapsed && <span>Logout</span>}
+          {!collapsed && <span>Sign out</span>}
         </button>
       </div>
     </aside>

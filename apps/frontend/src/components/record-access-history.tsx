@@ -174,7 +174,7 @@ export function RecordAccessHistory({ patientId }: { patientId?: string }) {
                         {formatDate(entry.createdAt ?? entry.timestamp, 'short')}
                       </time>
                       {entry.ipAddress && (
-                        <span className={cn('font-mono', entry.result !== 'SUCCESS' && 'text-red-500')}>
+                        <span className={cn('font-mono', entry.result !== 'SUCCESS' && 'text-alert-red-500')}>
                           {entry.ipAddress}
                         </span>
                       )}

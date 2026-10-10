@@ -298,22 +298,22 @@ export function MedicalProfileCardView({
       {/* ─── The card ─────────────────────────────────────────────────── */}
       <div className="rounded-2xl border border-border shadow-sm overflow-hidden" id="medical-card">
         {/* Header */}
-        <div className="bg-gradient-to-r from-cyan-800 to-teal-800 text-white">
+        <div className="bg-gradient-to-r from-medical-blue-900 to-medical-blue-700 text-white">
           <div className="flex items-center justify-between px-6 py-5">
             <div>
               <p className="text-xs font-semibold tracking-[0.25em] uppercase">
                 Medivault
               </p>
-              <p className="text-[11px] text-cyan-100/90 -mt-0.5">MEDICAL PROFILE CARD</p>
+              <p className="text-[11px] text-medical-blue-200/90 -mt-0.5">MEDICAL PROFILE CARD</p>
             </div>
             <div className="flex items-center gap-3">
               <div className="text-right">
                 <p className="text-sm font-bold">{fullName}</p>
                 <div>
-                  <p className="text-xs font-mono font-bold text-cyan-200 tracking-wider">
+                  <p className="text-xs font-mono font-bold text-medical-blue-200 tracking-wider">
                     {toMvId(p.profileId) ?? p.profileId ?? '—'}
                   </p>
-                  <p className="text-[10px] font-mono text-cyan-100/70">{p.mrn}</p>
+                  <p className="text-[10px] font-mono text-medical-blue-200/70">{p.mrn}</p>
                 </div>
               </div>
               <Avatar name={fullName} size="md" />
@@ -321,7 +321,7 @@ export function MedicalProfileCardView({
           </div>
           <div className="flex items-center justify-between border-t border-white/15 px-6 py-3">
             <div className="flex items-center gap-2 text-sm">
-              <ShieldCheck className="h-4 w-4 text-emerald-300" />
+              <ShieldCheck className="h-4 w-4 text-clinical-green-300" />
               <span className="font-medium">Verified medical profile</span>
             </div>
             {isActive ? (

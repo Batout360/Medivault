@@ -303,8 +303,8 @@ export default function AuditLogsPage() {
                           key={log.id}
                           className={cn(
                             'hover:bg-accent/30 transition-colors',
-                            log.result === 'DENIED' && 'bg-amber-50/50 dark:bg-amber-900/5',
-                            log.result === 'FAILURE' && 'bg-red-50/50 dark:bg-red-900/5',
+                            log.result === 'DENIED' && 'bg-warning-amber-50/50 dark:bg-warning-amber-950/10',
+                            log.result === 'FAILURE' && 'bg-alert-red-50/50 dark:bg-alert-red-950/10',
                           )}
                         >
                           <td className="py-2.5 px-4 text-xs text-muted-foreground whitespace-nowrap">

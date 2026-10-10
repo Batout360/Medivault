@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import Link from "next/link";
@@ -101,7 +101,7 @@ function AdminStatCard({
               className={cn(
                 "text-2xl font-bold mt-1 tabular-nums",
                 variant === "danger" && "text-destructive",
-                variant === "warning" && "text-amber-600 dark:text-amber-400",
+                variant === "warning" && "text-warning-amber-600 dark:text-warning-amber-400",
               )}
             >
               {value}
@@ -112,9 +112,9 @@ function AdminStatCard({
               "rounded-xl p-2.5",
               variant === "default" && "bg-muted text-muted-foreground",
               variant === "danger" &&
-                "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
+                "bg-alert-red-100 text-alert-red-600 dark:bg-alert-red-950 dark:text-alert-red-400",
               variant === "warning" &&
-                "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
+                "bg-warning-amber-100 text-warning-amber-600 dark:bg-warning-amber-950 dark:text-warning-amber-400",
             )}
           >
             <Icon className="h-5 w-5" aria-hidden="true" />
@@ -363,7 +363,7 @@ export default function AdminPage() {
                 </div>
               ) : !users?.data?.length ? (
                 <div className="p-8 text-center text-sm text-muted-foreground">
-                  No users found.
+                  No staff found.
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -517,7 +517,7 @@ export default function AdminPage() {
                 </div>
               ) : !securityEvents?.length ? (
                 <div className="p-8 text-center">
-                  <Shield className="mx-auto h-8 w-8 text-emerald-500/30 mb-2" />
+                  <Shield className="mx-auto h-8 w-8 text-clinical-green-500/30 mb-2" />
                   <p className="text-sm text-muted-foreground">
                     No security events in the last 24h
                   </p>
@@ -536,7 +536,7 @@ export default function AdminPage() {
                             event.severity === "CRITICAL" ||
                               event.severity === "HIGH"
                               ? "text-destructive"
-                              : "text-amber-500",
+                              : "text-warning-amber-500",
                           )}
                         />
                       </div>
@@ -583,7 +583,7 @@ export default function AdminPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total users</span>
+                  <span className="text-muted-foreground">Total patients</span>
                   <span className="font-medium">
                     {stats?.totalPatients?.toLocaleString() ?? "—"}
                   </span>

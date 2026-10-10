@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import * as React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -90,24 +90,24 @@ function FingerprintIcon({
           'relative flex h-28 w-28 items-center justify-center rounded-full transition-all duration-500',
           state === 'idle' && 'bg-muted',
           isScanning && 'bg-primary/10 ring-4 ring-primary/30',
-          isFound && 'bg-emerald-100 dark:bg-emerald-900/30',
-          isError && 'bg-red-100 dark:bg-red-900/20',
-          state === 'enrolling' && 'bg-violet-100 dark:bg-violet-900/30',
+          isFound && 'bg-clinical-green-100 dark:bg-clinical-green-950/30',
+          isError && 'bg-alert-red-100 dark:bg-alert-red-950/20',
+          state === 'enrolling' && 'bg-primary/10',
         )}
       >
         {state === 'found' || state === 'enrolled' ? (
-          <CheckCircle className="h-14 w-14 text-emerald-600 dark:text-emerald-400" />
+          <CheckCircle className="h-14 w-14 text-clinical-green-600 dark:text-clinical-green-400" />
         ) : state === 'not_found' ? (
-          <XCircle className="h-14 w-14 text-red-600 dark:text-red-400" />
+          <XCircle className="h-14 w-14 text-alert-red-600 dark:text-alert-red-400" />
         ) : state === 'error' ? (
-          <AlertTriangle className="h-14 w-14 text-amber-600 dark:text-amber-400" />
+          <AlertTriangle className="h-14 w-14 text-warning-amber-600 dark:text-warning-amber-400" />
         ) : (
           <Fingerprint
             className={cn(
               'h-14 w-14 transition-colors duration-300',
               state === 'idle' && 'text-muted-foreground/40',
               isScanning && 'text-primary',
-              state === 'enrolling' && 'text-violet-600 dark:text-violet-400',
+              state === 'enrolling' && 'text-primary',
             )}
           />
         )}
@@ -177,29 +177,29 @@ function StatusMessage({ state }: { state: ScanState }) {
       color: 'text-primary',
     },
     found: {
-      title: 'User found',
+      title: 'Patient found',
       description: 'Fingerprint matched successfully',
-      color: 'text-emerald-600 dark:text-emerald-400',
+      color: 'text-clinical-green-600 dark:text-clinical-green-400',
     },
     not_found: {
       title: 'No match found',
       description: 'Fingerprint could not be matched in the database',
-      color: 'text-red-600 dark:text-red-400',
+      color: 'text-alert-red-600 dark:text-alert-red-400',
     },
     error: {
       title: 'Scan error',
       description: 'An error occurred. Please try again.',
-      color: 'text-amber-600 dark:text-amber-400',
+      color: 'text-warning-amber-600 dark:text-warning-amber-400',
     },
     enrolling: {
       title: 'Enrollment mode',
-      description: 'Scan the user\u2019s fingerprint to enroll',
-      color: 'text-violet-600 dark:text-violet-400',
+      description: 'Scan the patient\u2019s fingerprint to enroll',
+      color: 'text-primary',
     },
     enrolled: {
       title: 'Enrollment complete',
       description: 'Fingerprint enrolled successfully',
-      color: 'text-emerald-600 dark:text-emerald-400',
+      color: 'text-clinical-green-600 dark:text-clinical-green-400',
     },
   };
 
@@ -430,16 +430,16 @@ export default function FingerprintPage() {
       {/* ─── Header ──────────────────────────────────────────────────── */}
       <div className="text-center space-y-1">
         <h1 className="text-2xl font-bold">
-          {isEnrollMode ? 'Fingerprint Enrollment' : 'User Identification'}
+          {isEnrollMode ? 'Fingerprint Enrollment' : 'Patient Identification'}
         </h1>
         <p className="text-sm text-muted-foreground">
           {isEnrollMode
-            ? "Register the user's fingerprint for future identification"
-            : 'Identify a user using their fingerprint biometric'}
+            ? "Register the patient's fingerprint for future identification"
+            : 'Identify a patient using their fingerprint biometric'}
         </p>
         {isEnrollMode && (
           <p className="text-xs text-muted-foreground">
-            Enrollment is optional — the user is already registered and can be
+            Enrollment is optional — the patient is already registered and can be
             enrolled at any time later.
           </p>
         )}
@@ -491,7 +491,7 @@ export default function FingerprintPage() {
             <div
               className={cn(
                 'flex items-center gap-2 text-sm font-medium transition-opacity',
-                fingerDetected ? 'text-emerald-600 dark:text-emerald-400' : 'text-primary',
+                fingerDetected ? 'text-clinical-green-600 dark:text-clinical-green-400' : 'text-primary',
               )}
               role="status"
             >
@@ -579,29 +579,29 @@ export default function FingerprintPage() {
 
       {/* ─── FOUND: Show confirmation — NOT the full record ─────────────
            Per the spec: fingerprint → identify → authorize → records.
-           We show only the user ID here and require navigating to
+           We show only the patient ID here and require navigating to
            the patient profile (which enforces its own authorization).
       ────────────────────────────────────────────────────────────────── */}
       {scanState === 'found' && matchedPatient && (
-        <Card className="border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-900/5">
+        <Card className="border-clinical-green-200 dark:border-clinical-green-800 bg-clinical-green-50/50 dark:bg-clinical-green-950/10">
           <CardContent className="p-6 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
-                <CheckCircle className="h-5 w-5 text-emerald-600" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-clinical-green-100 dark:bg-clinical-green-900/40">
+                <CheckCircle className="h-5 w-5 text-clinical-green-600" />
               </div>
               <div>
-                <p className="font-semibold text-emerald-800 dark:text-emerald-300">
-                  User Identified
+                <p className="font-semibold text-clinical-green-800 dark:text-clinical-green-300">
+                  Patient Identified
                 </p>
-                <p className="text-sm text-emerald-700/80 dark:text-emerald-400/80">
+                <p className="text-sm text-clinical-green-700/80 dark:text-clinical-green-400/80">
                   Confidence: {Math.round(matchedPatient.confidence ?? 0)}%
                 </p>
               </div>
             </div>
 
-            <div className="rounded-lg bg-white/80 dark:bg-black/20 border border-emerald-100 dark:border-emerald-800 p-4">
+            <div className="rounded-lg bg-card border border-clinical-green-100 dark:border-clinical-green-900 p-4">
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                User ID
+                Patient ID
               </p>
               <p className="text-lg font-mono font-bold mt-1">
                 {matchedPatient.patientId}
@@ -615,12 +615,12 @@ export default function FingerprintPage() {
             <div className="flex flex-col sm:flex-row gap-2">
               <Button className="flex-1" asChild>
                 <Link href={`/patients/${matchedPatient.patientId}`}>
-                  View User Record
+                  View Patient Record
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
               <Button variant="outline" onClick={handleReset}>
-                Scan Another
+                Scan Another Patient
               </Button>
             </div>
           </CardContent>
@@ -629,11 +629,11 @@ export default function FingerprintPage() {
 
       {/* ─── ENROLLED: Confirm enrollment ─────────────────────────────── */}
       {scanState === 'enrolled' && (
-        <Card className="border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-900/5">
+        <Card className="border-clinical-green-200 dark:border-clinical-green-800 bg-clinical-green-50/50 dark:bg-clinical-green-950/10">
           <CardContent className="p-6 space-y-4">
             <div className="flex items-center gap-3">
-              <CheckCircle className="h-5 w-5 text-emerald-600" />
-              <p className="font-semibold text-emerald-800 dark:text-emerald-300">
+              <CheckCircle className="h-5 w-5 text-clinical-green-600" />
+              <p className="font-semibold text-clinical-green-800 dark:text-clinical-green-300">
                 Fingerprint enrolled successfully
               </p>
             </div>
@@ -641,7 +641,7 @@ export default function FingerprintPage() {
               {enrollPatientId && (
                 <Button asChild>
                   <Link href={`/patients/${enrollPatientId}`}>
-                    View User Profile
+                    View Patient Profile
                   </Link>
                 </Button>
               )}
@@ -661,10 +661,10 @@ export default function FingerprintPage() {
               <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-medium text-amber-800 dark:text-amber-300">
-                  User not found
+                  Patient not found
                 </p>
                 <p className="text-sm text-amber-700/80 dark:text-amber-400/80">
-                  The fingerprint could not be matched. The user may not be
+                  The fingerprint could not be matched. The patient may not be
                   registered, or their fingerprint may not be enrolled.
                 </p>
               </div>
@@ -674,7 +674,7 @@ export default function FingerprintPage() {
                 <Link href="/patients">Search by Name / ID</Link>
               </Button>
               <Button variant="outline" size="sm" asChild>
-                <Link href="/patients/new">Register New User</Link>
+                <Link href="/patients/new">Register New Patient</Link>
               </Button>
             </div>
           </CardContent>

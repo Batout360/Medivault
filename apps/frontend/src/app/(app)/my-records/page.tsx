@@ -285,7 +285,7 @@ function MyRecordsInner() {
             <div className="text-sm text-muted-foreground space-y-0.5 sm:text-right">
               <p>Age {calculateAge(p.dateOfBirth)} · {formatDate(p.dateOfBirth, 'short')}</p>
               <p className="capitalize">{p.gender.toLowerCase()}</p>
-              <p className="font-semibold text-red-600 dark:text-red-400">
+              <p className="font-semibold text-alert-red-600 dark:text-alert-red-400">
                 Blood group: {formatBloodGroup(p.bloodGroup)}
               </p>
             </div>
@@ -294,18 +294,18 @@ function MyRecordsInner() {
       </Card>
 
       {summary.note && (
-        <div className="flex items-start gap-2 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 px-3 py-2">
-          <AlertCircle className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-blue-800 dark:text-blue-300">{summary.note}</p>
+        <div className="flex items-start gap-2 rounded-lg bg-primary/5 border border-primary/20 px-3 py-2">
+          <AlertCircle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-foreground/80">{summary.note}</p>
         </div>
       )}
 
       {/* ─── Allergies alert ─────────────────────────────────────────── */}
       {summary.allergies.criticalAllergies.length > 0 && (
-        <div className="flex items-start gap-2 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 px-3 py-2">
-          <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
+        <div className="flex items-start gap-2 rounded-lg bg-alert-red-50 dark:bg-alert-red-950/20 border border-alert-red-200 dark:border-alert-red-800 px-3 py-2">
+          <AlertCircle className="h-4 w-4 text-alert-red-600 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-xs font-semibold text-red-700 dark:text-red-400 uppercase tracking-wide">
+            <p className="text-xs font-semibold text-alert-red-700 dark:text-alert-red-400 uppercase tracking-wide">
               Critical Allergies
             </p>
             <div className="flex flex-wrap gap-1.5 mt-1">

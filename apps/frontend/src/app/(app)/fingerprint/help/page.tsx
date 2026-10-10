@@ -104,7 +104,7 @@ export default function FingerprintHelpPage() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            <CheckCircle2 className="h-4 w-4 text-clinical-green-600" />
             Prerequisites
           </CardTitle>
         </CardHeader>
@@ -149,7 +149,7 @@ export default function FingerprintHelpPage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
             {showWarnings ? (
-              <XCircle className="h-4 w-4 text-amber-600" />
+              <XCircle className="h-4 w-4 text-warning-amber-600" />
             ) : (
               <Fingerprint className="h-4 w-4 text-primary" />
             )}
@@ -177,7 +177,7 @@ export default function FingerprintHelpPage() {
           </button>
 
           {showWarnings && (
-            <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 p-3 text-xs space-y-1.5">
+            <div className="rounded-lg border border-warning-amber-200 dark:border-warning-amber-800 bg-warning-amber-50/50 p-3 text-xs space-y-1.5">
               <p>
                 <strong>Real hardware only:</strong> the frontend does not ship
                 any simulated scanner. Captures come exclusively from the local

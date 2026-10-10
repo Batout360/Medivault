@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import Link from "next/link";
@@ -72,16 +72,14 @@ const genderLabel: Record<string, string> = {
 };
 
 const bloodGroupColors: Record<string, string> = {
-  "A+": "text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400",
-  "A-": "text-red-500 bg-red-50 dark:bg-red-900/20 dark:text-red-400",
-  "B+": "text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400",
-  "B-": "text-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400",
-  "AB+":
-    "text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400",
-  "AB-":
-    "text-purple-500 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400",
-  "O+": "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400",
-  "O-": "text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400",
+  "A+": "text-alert-red-600 bg-alert-red-50 dark:bg-alert-red-950 dark:text-alert-red-400",
+  "A-": "text-alert-red-500 bg-alert-red-50 dark:bg-alert-red-950 dark:text-alert-red-400",
+  "B+": "text-medical-blue-600 bg-medical-blue-50 dark:bg-medical-blue-950 dark:text-medical-blue-400",
+  "B-": "text-medical-blue-500 bg-medical-blue-50 dark:bg-medical-blue-950 dark:text-medical-blue-400",
+  "AB+": "text-primary bg-primary/10 dark:bg-primary/20 dark:text-primary",
+  "AB-": "text-primary/80 bg-primary/10 dark:bg-primary/20 dark:text-primary/80",
+  "O+": "text-clinical-green-600 bg-clinical-green-50 dark:bg-clinical-green-950 dark:text-clinical-green-400",
+  "O-": "text-clinical-green-500 bg-clinical-green-50 dark:bg-clinical-green-950 dark:text-clinical-green-400",
 };
 
 // ─── Patients List Page ───────────────────────────────────────────────────────
@@ -149,18 +147,18 @@ export default function PatientsPage() {
       {/* ─── Header ──────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold">Users</h1>
+          <h1 className="text-xl font-bold">Patients</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {data?.total !== undefined
-              ? `${data.total.toLocaleString()} registered users`
-              : "User registry"}
+              ? `${data.total.toLocaleString()} registered patients`
+              : "Patient registry"}
           </p>
         </div>
         {canRegister && (
           <Button size="sm" asChild>
             <Link href="/patients/new">
               <UserPlus className="h-4 w-4" />
-              Register User
+              Register Patient
             </Link>
           </Button>
         )}
@@ -186,7 +184,7 @@ export default function PatientsPage() {
                   "placeholder:text-muted-foreground",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                 )}
-                aria-label="Search users"
+                aria-label="Search patients"
               />
               {rawSearch && (
                 <button
@@ -310,8 +308,8 @@ export default function PatientsPage() {
             <div>
               <p className="text-sm font-medium">
                 {rawSearch || hasActiveFilters
-                  ? "No users match your search."
-                  : "No users registered yet."}
+                  ? "No patients match your search."
+                  : "No patients registered yet."}
               </p>
               {(rawSearch || hasActiveFilters) && (
                 <p className="text-xs text-muted-foreground mt-1">
@@ -321,7 +319,7 @@ export default function PatientsPage() {
             </div>
             {canRegister && !rawSearch && !hasActiveFilters && (
               <Button size="sm" asChild>
-                <Link href="/patients/new">Register first user</Link>
+                <Link href="/patients/new">Register first patient</Link>
               </Button>
             )}
           </CardContent>
@@ -333,11 +331,9 @@ export default function PatientsPage() {
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
                     <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs uppercase tracking-wider">
-                      User
-                    </th>
+                      Patient</th>
                     <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs uppercase tracking-wider">
-                      User ID
-                    </th>
+                      Patient ID</th>
                     <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs uppercase tracking-wider">
                       Contact
                     </th>

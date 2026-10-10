@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import Image from "next/image";
@@ -120,17 +120,17 @@ function StatsCard({
     default: "bg-muted text-muted-foreground",
     primary: "bg-primary/10 text-primary",
     success:
-      "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
+      "bg-clinical-green-100 text-clinical-green-600 dark:bg-clinical-green-950 dark:text-clinical-green-400",
     warning:
-      "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
-    danger: "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
+      "bg-warning-amber-100 text-warning-amber-600 dark:bg-warning-amber-950 dark:text-warning-amber-400",
+    danger: "bg-alert-red-100 text-alert-red-600 dark:bg-alert-red-950 dark:text-alert-red-400",
   }[variant];
 
   return (
     <Card
       className={cn(
-        "transition-all duration-200",
-        href && "hover:shadow-md hover:-translate-y-0.5 cursor-pointer",
+        "transition-shadow duration-200",
+        href && "hover:shadow-md cursor-pointer",
       )}
     >
       <CardContent className="p-5">
@@ -146,8 +146,8 @@ function StatsCard({
                   className={cn(
                     "flex items-center gap-0.5 text-xs font-medium",
                     trend >= 0
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : "text-red-600 dark:text-red-400",
+                      ? "text-clinical-green-600 dark:text-clinical-green-400"
+                      : "text-alert-red-600 dark:text-alert-red-400",
                   )}
                 >
                   {trend >= 0 ? (
@@ -192,14 +192,13 @@ function QuickAction({
     default: "border-border hover:bg-accent",
     primary: "border-primary/20 bg-primary/5 hover:bg-primary/10",
     fingerprint:
-      "border-violet-200 bg-violet-50 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-900/20 dark:hover:bg-violet-900/30",
+      "border-primary/20 bg-primary/5 hover:bg-primary/10",
   }[variant];
 
   const iconStyles = {
     default: "bg-muted text-muted-foreground",
     primary: "bg-primary/10 text-primary",
-    fingerprint:
-      "bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-400",
+    fingerprint: "bg-primary/10 text-primary",
   }[variant];
 
   return (
@@ -235,7 +234,7 @@ const activityBadge: Record<
     variant: "default" | "info" | "success" | "warning" | "purple";
   }
 > = {
-  patient: { label: "User", variant: "info" },
+  patient: { label: "Patient", variant: "info" },
   record: { label: "Record", variant: "success" },
   auth: { label: "Auth", variant: "warning" },
   biometric: { label: "Biometric", variant: "purple" },
@@ -329,19 +328,19 @@ function MediVaultIdCard() {
   return (
     <div className="max-w-3xl rounded-2xl border border-border overflow-hidden shadow-sm">
       {/* Header */}
-      <div className="bg-gradient-to-r from-cyan-800 to-teal-700 px-6 py-4 text-white">
+      <div className="bg-gradient-to-r from-medical-blue-900 to-medical-blue-700 px-6 py-4 text-white">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-cyan-100/80">
+            <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-medical-blue-200/80">
               Medivault · Patient Identity
             </p>
             <p className="text-xl font-bold mt-0.5">{fullName}</p>
-            <p className="text-xs font-mono text-cyan-100/70 mt-0.5">{me.mrn}</p>
+            <p className="text-xs font-mono text-medical-blue-200/70 mt-0.5">{me.mrn}</p>
           </div>
           <div className="text-right">
             {displayId ? (
               <div>
-                <p className="text-[10px] font-medium uppercase tracking-widest text-cyan-200/70">
+                <p className="text-[10px] font-medium uppercase tracking-widest text-medical-blue-200/70">
                   {me.patientId ? "Patient ID" : "MediVault ID"}
                 </p>
                 <p className="text-2xl font-black font-mono tracking-widest text-white mt-0.5">
@@ -349,19 +348,19 @@ function MediVaultIdCard() {
                 </p>
               </div>
             ) : (
-              <p className="text-sm text-cyan-100/70">No ID assigned</p>
+              <p className="text-sm text-medical-blue-200/70">No ID assigned</p>
             )}
           </div>
         </div>
       </div>
 
       {/* Identity details */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-6 py-4 bg-white dark:bg-zinc-900">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-6 py-4 bg-card">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             Blood Group
           </p>
-          <p className="text-sm font-bold text-red-600 dark:text-red-400 mt-0.5">
+          <p className="text-sm font-bold text-alert-red-600 dark:text-alert-red-400 mt-0.5">
             {formatBloodGroup(me.bloodGroup)}
           </p>
         </div>
@@ -394,8 +393,8 @@ function MediVaultIdCard() {
         <div className="flex items-center gap-2 text-sm">
           {card?.qr.status === "ACTIVE" ? (
             <>
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-emerald-700 dark:text-emerald-400 font-medium">
+              <span className="h-2 w-2 rounded-full bg-clinical-green-500 animate-pulse" />
+              <span className="text-clinical-green-700 dark:text-clinical-green-400 font-medium">
                 QR Active
               </span>
               {(card?.qr.scanCount ?? 0) > 0 && (
@@ -407,8 +406,8 @@ function MediVaultIdCard() {
             </>
           ) : card?.qr.status === "REVOKED" ? (
             <>
-              <span className="h-2 w-2 rounded-full bg-red-500" />
-              <span className="text-red-700 dark:text-red-400 font-medium">
+              <span className="h-2 w-2 rounded-full bg-alert-red-500" />
+              <span className="text-alert-red-700 dark:text-alert-red-400 font-medium">
                 QR Revoked
               </span>
             </>
@@ -442,7 +441,7 @@ function MediVaultIdCard() {
           )}
           <Button size="sm" variant="outline" asChild>
             <Link href="/profile">
-              <Droplet className="h-3.5 w-3.5 text-red-500" />
+              <Droplet className="h-3.5 w-3.5 text-alert-red-500" />
               Manage Card
             </Link>
           </Button>
@@ -531,12 +530,12 @@ function PatientQrModal({
               <div className="text-sm">
                 <p className="text-xs text-muted-foreground">Status</p>
                 {isActive ? (
-                  <p className="font-medium text-emerald-600 dark:text-emerald-400">
+                  <p className="font-medium text-clinical-green-600 dark:text-clinical-green-400">
                     Active · {card?.qr.scanCount ?? 0} scan
                     {(card?.qr.scanCount ?? 0) === 1 ? "" : "s"}
                   </p>
                 ) : card?.qr.status === "REVOKED" ? (
-                  <p className="font-medium text-red-600 dark:text-red-400">
+                  <p className="font-medium text-alert-red-600 dark:text-alert-red-400">
                     Revoked
                   </p>
                 ) : (
@@ -788,14 +787,14 @@ export default function DashboardPage() {
               <Button variant="outline" size="sm" asChild>
                 <Link href="/patients">
                   <Users className="h-4 w-4" />
-                  View Users
+                  View Patients
                 </Link>
               </Button>
               {(isReceptionist || isAdmin) && (
                 <Button size="sm" asChild>
                   <Link href="/patients/new">
                     <UserPlus className="h-4 w-4" />
-                    Register User
+                    Register Patient
                   </Link>
                 </Button>
               )}
@@ -812,7 +811,7 @@ export default function DashboardPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatsCard
-                title="Total Users"
+                title="Total Patients"
                 value={stats?.totalPatients?.toLocaleString() ?? "—"}
                 icon={Users}
                 trend={stats?.patientsTrend}
@@ -824,7 +823,7 @@ export default function DashboardPage() {
                 title="Today's Registrations"
                 value={stats?.todayRegistrations ?? "—"}
                 icon={UserPlus}
-                description="New users registered today"
+                description="New patients registered today"
                 href="/patients?filter=today"
                 variant="success"
               />
@@ -856,22 +855,22 @@ export default function DashboardPage() {
               <div className="space-y-2">
                 <QuickAction
                   label="Scan Fingerprint"
-                  description="Identify a user biometrically"
+                  description="Identify a patient biometrically"
                   icon={Fingerprint}
                   href="/fingerprint"
                   variant="fingerprint"
                 />
                 {(isReceptionist || isAdmin) && (
                   <QuickAction
-                    label="Register User"
-                    description="Create a new user record"
+                    label="Register Patient"
+                    description="Create a new patient record"
                     icon={UserPlus}
                     href="/patients/new"
                     variant="primary"
                   />
                 )}
                 <QuickAction
-                  label="Search Users"
+                  label="Search Patients"
                   description="Find by name, ID, or phone"
                   icon={Users}
                   href="/patients"
@@ -896,20 +895,20 @@ export default function DashboardPage() {
 
               {/* Alerts */}
               {(stats?.recentAlerts ?? 0) > 0 && (
-                <Card className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/10">
+                <Card className="border-warning-amber-200 bg-warning-amber-50 dark:border-warning-amber-800 dark:bg-warning-amber-950/20">
                   <CardContent className="p-4 flex items-start gap-3">
-                    <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <AlertCircle className="h-4 w-4 text-warning-amber-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                      <p className="text-sm font-medium text-warning-amber-800 dark:text-warning-amber-300">
                         {stats?.recentAlerts} security alert
                         {stats?.recentAlerts !== 1 ? "s" : ""}
                       </p>
-                      <p className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-0.5">
+                      <p className="text-xs text-warning-amber-600/80 dark:text-warning-amber-400/80 mt-0.5">
                         Unusual activity detected. Review audit logs.
                       </p>
                       <Link
                         href="/admin/audit-logs"
-                        className="mt-1.5 inline-flex text-xs text-amber-700 dark:text-amber-300 font-medium hover:underline"
+                        className="mt-1.5 inline-flex text-xs text-warning-amber-700 dark:text-warning-amber-300 font-medium hover:underline"
                       >
                         Review →
                       </Link>
@@ -919,10 +918,10 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* ─── Recent Users ─────────────────────────────────────────── */}
+            {/* ─── Recent Patients ─────────────────────────────────────────── */}
             <div className="lg:col-span-2 space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-base font-semibold">Recent Users</h2>
+                <h2 className="text-base font-semibold">Recent Patients</h2>
                 <Button variant="ghost" size="sm" asChild>
                   <Link href="/patients">
                     View all
@@ -940,10 +939,10 @@ export default function DashboardPage() {
                   <CardContent className="p-8 flex flex-col items-center gap-3 text-center">
                     <Users className="h-8 w-8 text-muted-foreground/30" />
                     <p className="text-sm text-muted-foreground">
-                      No users yet.
+                      No patients yet.
                     </p>
                     <Button size="sm" asChild>
-                      <Link href="/patients/new">Register first user</Link>
+                      <Link href="/patients/new">Register first patient</Link>
                     </Button>
                   </CardContent>
                 ) : (
@@ -953,7 +952,7 @@ export default function DashboardPage() {
                         key={patient.id}
                         href={`/patients/${patient.id}`}
                         className="flex items-center gap-4 px-4 py-3 hover:bg-accent transition-colors group"
-                        aria-label={`View user ${patient.fullName}`}
+                        aria-label={`View patient ${patient.fullName}`}
                       >
                         <Avatar name={patient.fullName} size="sm" />
                         <div className="flex-1 min-w-0">

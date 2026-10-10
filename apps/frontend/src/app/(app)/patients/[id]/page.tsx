@@ -754,7 +754,7 @@ function DocumentsTab({
             'text-sm',
             status.kind === 'error'
               ? 'text-destructive'
-              : 'text-emerald-600 dark:text-emerald-400',
+              : 'text-clinical-green-600 dark:text-clinical-green-400',
           )}
         >
           {status.message}
@@ -1390,7 +1390,7 @@ export default function PatientProfilePage() {
                   {!patient.biometricEnrolled && !patient.hasBiometric && (
                     <Button
                       size="sm"
-                      className="bg-violet-600 hover:bg-violet-700 text-white"
+                      className="bg-primary hover:bg-primary/90 text-white"
                       asChild
                     >
                       <Link href={`/fingerprint?enroll=${id}`}>
@@ -2125,12 +2125,12 @@ export default function PatientProfilePage() {
 
           {loginResult && (
             <div className="space-y-3">
-              <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/10 p-4 space-y-3 text-sm">
+              <div className="rounded-lg border border-warning-amber-200 bg-warning-amber-50 dark:border-warning-amber-800 dark:bg-warning-amber-950/20 p-4 space-y-3 text-sm">
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Email
                   </span>
-                  <span className="font-mono text-amber-900 dark:text-amber-300">
+                  <span className="font-mono text-warning-amber-900 dark:text-warning-amber-300">
                     {loginResult.email}
                   </span>
                 </div>
@@ -2138,7 +2138,7 @@ export default function PatientProfilePage() {
                   <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Temporary Password
                   </span>
-                  <span className="font-mono text-amber-900 dark:text-amber-300">
+                  <span className="font-mono text-warning-amber-900 dark:text-warning-amber-300">
                     {loginResult.temporaryPassword}
                   </span>
                 </div>

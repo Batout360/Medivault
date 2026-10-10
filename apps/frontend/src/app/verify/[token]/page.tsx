@@ -57,12 +57,12 @@ const CARE_TEAM_ROLES = new Set<string>([
 function SeverityBadge({ severity }: { severity: string | null }) {
   if (!severity) return null;
   const color: Record<string, string> = {
-    LIFE_THREATENING: 'bg-red-600 text-white',
-    CRITICAL: 'bg-red-600 text-white',
-    SEVERE: 'bg-red-500 text-white',
-    HIGH: 'bg-orange-500 text-white',
-    MODERATE: 'bg-amber-400 text-black',
-    MILD: 'bg-yellow-200 text-yellow-900',
+    LIFE_THREATENING: 'bg-alert-red-600 text-white',
+    CRITICAL: 'bg-alert-red-600 text-white',
+    SEVERE: 'bg-alert-red-500 text-white',
+    HIGH: 'bg-warning-amber-600 text-white',
+    MODERATE: 'bg-warning-amber-400 text-black',
+    MILD: 'bg-warning-amber-100 text-warning-amber-900',
   };
   return (
     <span
@@ -78,7 +78,7 @@ function SeverityBadge({ severity }: { severity: string | null }) {
 // ─── Blood type pill ──────────────────────────────────────────────────────────
 function BloodBadge({ group }: { group: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-1.5 text-2xl font-bold text-red-600 dark:text-red-400">
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-alert-red-50 dark:bg-alert-red-950 border border-alert-red-200 dark:border-alert-red-800 px-4 py-1.5 text-2xl font-bold text-alert-red-600 dark:text-alert-red-400">
       <Droplet className="h-5 w-5" />
       {formatBloodGroup(group)}
     </span>
@@ -98,19 +98,19 @@ function Section({
   accent?: 'red' | 'amber' | 'teal';
 }) {
   const border = {
-    red: 'border-red-200 dark:border-red-800',
-    amber: 'border-amber-200 dark:border-amber-800',
-    teal: 'border-teal-200 dark:border-teal-800',
+    red: 'border-alert-red-200 dark:border-alert-red-800',
+    amber: 'border-warning-amber-200 dark:border-warning-amber-800',
+    teal: 'border-primary/20',
   }[accent ?? 'teal'] ?? 'border-border';
   const headerBg = {
-    red: 'bg-red-50 dark:bg-red-900/10',
-    amber: 'bg-amber-50 dark:bg-amber-900/10',
-    teal: 'bg-teal-50 dark:bg-teal-900/10',
+    red: 'bg-alert-red-50 dark:bg-alert-red-950/20',
+    amber: 'bg-warning-amber-50 dark:bg-warning-amber-950/20',
+    teal: 'bg-primary/5',
   }[accent ?? 'teal'] ?? 'bg-muted/40';
   const iconColor = {
-    red: 'text-red-600',
-    amber: 'text-amber-600',
-    teal: 'text-teal-600',
+    red: 'text-alert-red-600',
+    amber: 'text-warning-amber-600',
+    teal: 'text-primary',
   }[accent ?? 'teal'] ?? 'text-muted-foreground';
 
   return (
@@ -295,7 +295,7 @@ export default function VerifyPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-zinc-950 dark:to-zinc-900">
       {/* Header */}
-      <header className="border-b border-border bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b border-border bg-background/90 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2 text-cyan-800 dark:text-cyan-300">
             <HeartPulse className="h-5 w-5" />
